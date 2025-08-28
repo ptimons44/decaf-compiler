@@ -9,7 +9,7 @@ version = "0.1.0-SNAPSHOT"
 // Our build server uses Java 17
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))
+        languageVersion.set(JavaLanguageVersion.of(23))
     }
 }
 
