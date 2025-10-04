@@ -1,0 +1,3 @@
+[submodule "src/test/public-tests"]
+	path = src/test/public-tests
+	url = https://github.com/6110-sp25/public-tests
