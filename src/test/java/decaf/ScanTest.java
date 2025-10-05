@@ -21,7 +21,13 @@ public class ScanTest {
 
     @ParameterizedTest
     @DirectorySource("src/test/public-tests/phase1-parser/public/illegal") // directory A
-    public void testIllegealProgramAssertFail(String in) {
+    public void testBadProgramAssertFail(String in) {
+        System.out.println("testing file " + in);
+    }
+
+    @ParameterizedTest
+    @DirectorySource("src/test/public-tests/phase1-parser/public/legal") // directory A
+    public void testGoodProgramCompilesSucessfully(String in) {
         System.out.println("testing file " + in);
     }
 }
