@@ -11,4 +11,9 @@ public class ExampleTest {
         assertTrue(true);
     }
 
+    @Test
+    void testAlwaysFails() {
+        assertTrue(false);
+    }
+
 }
