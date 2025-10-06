@@ -54,7 +54,7 @@ public class CommandLineInterface {
      * INTER: produce a high-level intermediate representation from the input
      * ASSEMBLY: produce assembly from the input.
      */
-    public enum CompilerAction {DEFAULT, SCAN, PARSE, INTER, ASSEMBLY}
+    public enum CompilerAction {SCAN, PARSE, INTER, ASSEMBLY, DEFAULT}
 
     /**
      * Array indicating which optimizations should be performed.  If
