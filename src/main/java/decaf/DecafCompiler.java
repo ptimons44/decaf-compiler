@@ -1,13 +1,12 @@
 package decaf;
 
 import decaf.utils.CommandLineInterface;
+import decaf.utils.CommandLineInterface.CompilerAction;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static java.decaf.utils.CommandLineInterface.CompilerAction;
 
 public class DecafCompiler {
 
@@ -20,25 +19,27 @@ public class DecafCompiler {
 
             Scan scan = new Scan(in);
             scan.scan();
-            if (CommandLineInterface.target == SCAN) {
+            if (CommandLineInterface.target == CompilerAction.SCAN) {
                 scan.write(outputStream);
-                return 0;
+                return;
             }
 
             Parse parse = new Parse(scan);
             parse.parse();
-            if (CommandLineInterface.target == PARSE) {
-                return parse.getErrors();
+            if (CommandLineInterface.target == CompilerAction.PARSE) {
+                parse.printErrors();
+                parse.printWarnings();
+                return;
             }
 
-            if (CommandLineInterface.target == INTER) {
-                return 0;
+            if (CommandLineInterface.target == CompilerAction.INTER) {
+                return;
             }
 
-            if (CommandLineInterface.target == ASSEMBLY) {
-                return 0;
+            if (CommandLineInterface.target == CompilerAction.ASSEMBLY) {
+                return;
             }
-            return 0;
+            return;
         } catch (IOException ioe) {
             System.err.printf("IOException encountered while processing file: %s", CommandLineInterface.infile);
             System.exit(1);

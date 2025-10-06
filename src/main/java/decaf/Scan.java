@@ -2,11 +2,14 @@ package decaf;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -28,7 +31,7 @@ public class Scan {
             "void"
     ));
 
-    public static final enum TokenType {
+    public static enum TokenType {
             CHARLITERAL, STRINGLITERAL, INTLITERAL,
             LONGLITERAL, BOOLEANLITERAL, IDENTIFIER, 
             PUNCTUATION
@@ -37,9 +40,9 @@ public class Scan {
     private class AnnotString {
         String str;
         TokenType annotation;
-        String lineNumber;
+        Integer lineNumber;
 
-        public AnnotString(String str, String annotation, String lineNumber) {
+        public AnnotString(String str, TokenType annotation, Integer lineNumber) {
             this.str = str;
             this.annotation = annotation;
             this.lineNumber = lineNumber;
@@ -51,14 +54,14 @@ public class Scan {
         }
     }
 
-    private final String input;
+    private final String in;
     private Map<Integer, List<AnnotString>> tokens = new HashMap<>(); // maps line number to token
     private Map<Integer, List<String>> errors = new HashMap<>(); // maps line number to error message
     private Map<Integer, List<String>> warnings = new HashMap<>(); // maps line number to warning message
 
     private int start = 0; // inclusive
     private int end = 0; // non-inclusive
-    private char | null lastChar = null;
+    private Character lastChar = null;
     private int lineNumber = 1;
     private boolean inSingleLineComment = false;
     private boolean inMultiLineComment = false;
@@ -79,7 +82,7 @@ public class Scan {
         // inStringLiteral = false;
         // inCharLiteral = false;
         // ignore this sequence and advance pointers
-        endSequence()
+        endSequence();
     }
 
     private String getCurrentSubstring() {
@@ -110,13 +113,19 @@ public class Scan {
         // check if in single line comment
         if (inSingleLineComment) {
             // check if ended single line comment
-            if (c == '\n') endIgnoredSequence();
+            if (c == '\n') {
+                endIgnoredSequence();
+                return;
+            }
         }
 
         // check if in multi line comment
         if (inMultiLineComment) {
             // check if ended multi line comment
-            if (lastChar == '*' && c == '/') endIgnoredSequence();
+            if (lastChar == '*' && c == '/') {  
+                endIgnoredSequence();
+                return;
+            }
 
         }
             
@@ -125,8 +134,8 @@ public class Scan {
             // check if ended string literal
             if (c == '"' && lastChar != '\\') {
                 endTokenSequence(TokenType.STRINGLITERAL);
+                return;
             }
-            continue;
         }
             
         // check if in char literal
@@ -134,6 +143,7 @@ public class Scan {
             // check if ended char literal
             if (c == '\'' && lastChar != '\\') {
                 endTokenSequence(TokenType.CHARLITERAL);
+                return;
             }
         }
 
@@ -165,7 +175,7 @@ public class Scan {
                 }
                 break;
             }
-            case "=" -> {
+            case '=' -> {
                 // tokenizes +=, -=, *=, /=, %=, <=, !=, >= operator
                 if (inOperator) {
                     endTokenSequence(TokenType.PUNCTUATION);
@@ -188,7 +198,7 @@ public class Scan {
                 // encountered != | <= | >= | %= | ! | < | > | % operator
                 inOperator = false;
             }
-            case '=', '+', '-' -> {
+            case '+', '-' -> {
                 // check for multi-char operators
                 if (inOperator) {
                     endTokenSequence(TokenType.PUNCTUATION);
@@ -233,7 +243,7 @@ public class Scan {
                 // report error if non a-f or A-F char encountered in hex literal
                 if (!Pattern.matches("[0-9a-fA-F]", String.valueOf(c)) && inHexLiteral) {
                     // end hex literal
-                    endTokenSequence(TokenType.HEXLITERAL);
+                    endTokenSequence(TokenType.INTLITERAL);
                     warnings.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add("No whitespace after hex literal");
                 }
             }
@@ -244,10 +254,10 @@ public class Scan {
     }
 
     public Scan(String in) {
-        this.input = in;
+        this.in = in;
     }
 
-    public void parse() throws ParseException {
+    public void scan() {
         while (this.canGobble()) {
             this.gobble();
         }
