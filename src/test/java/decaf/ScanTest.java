@@ -29,16 +29,7 @@ public class ScanTest {
         // Add your test logic here
         Scan scan = new Scan(inputContent);
         scan.scan();
-
-        try {
-            // Write to our capture stream
-            scan.write(printStream);
-        } catch (java.io.IOException e) {
-            fail("IOException thrown: " + e.getMessage());
-        }
-        
-        // Convert captured output to string and compare
-        String actualOutput = outputStream.toString().trim();
+        String actualOutput = scan.toString();
         String expectedOutputTrimmed = expectedOutput.trim();
         
         assertEquals(expectedOutputTrimmed, actualOutput);

@@ -91,7 +91,7 @@ public class Scan {
             String token = getCurrentSubstring();
             tokens.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add(new AnnotString(token, tokenType, lineNumber));
         }
-        start = ++end;
+        start = end;
     }
 
     private boolean canGobble() {
@@ -274,11 +274,18 @@ public class Scan {
         }
     }
 
-    public void write(OutputStream outputStream) throws IOException {
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
         for (int line : tokens.keySet()) {
             for (AnnotString token : tokens.get(line)) {
-                outputStream.write((token.toString() + "\n").getBytes(StandardCharsets.UTF_8));
+                sb.append(token.toString()).append("\n");
             }
         }
+        return sb.toString();
+    }
+
+    public void write(OutputStream outputStream) throws IOException {
+        String output = this.toString();
+        outputStream.write(output.getBytes(StandardCharsets.UTF_8));
     }
 }
