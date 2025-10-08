@@ -73,7 +73,6 @@ public class Scan {
 
     private void endSequence() {
         start = ++end;
-        end++;
     }
 
     private void endIgnoredSequence() {
@@ -96,14 +95,14 @@ public class Scan {
     }
 
     private boolean canGobble() {
-        return end <= in.length();
+        return end < in.length();
     }
 
     private void gobble() {
         assert canGobble();
         // lastChar = in.charAt(end++);
         // if (end >= in.length()) return;
-        char c = in.charAt(end);
+        char c = in.charAt(end++);
         if (c == '\n') lineNumber++;
         
         /*
@@ -208,14 +207,11 @@ public class Scan {
                 }
             }
             case ' ', '\t', '\r', '\n', '(', ')', '[', ']', ';' -> {
-                // process initial token identically
-                // classify current token as INTLITERAL, BOOLEANLITERAL, IDENTIFIER
                 if (inHexLiteral || inDecimalLiteral) {
                     endTokenSequence(TokenType.INTLITERAL);
                     inHexLiteral = false;
                     inDecimalLiteral = false;
                 }
-                // classify boolean literal
                 else if (getCurrentSubstring().equals("true") || getCurrentSubstring().equals("false")) {
                     endTokenSequence(TokenType.BOOLEANLITERAL);
                 }
@@ -227,9 +223,8 @@ public class Scan {
                 else if (Pattern.matches("[a-zA-Z_][a-zA-Z0-9_]*", getCurrentSubstring())) {
                     endTokenSequence(TokenType.IDENTIFIER);
                 }
-
-                // additionally process punctuation token
-                if (!Character.isWhitespace(c)) {
+                // classify punctuation
+                else {
                     endTokenSequence(TokenType.PUNCTUATION);
                 }
             }
@@ -249,8 +244,7 @@ public class Scan {
             }
         }
 
-        // update last char and advance end pointer to maintain end is non-inclusive invariant
-        lastChar = in.charAt(end++);
+        lastChar = c;
     }
 
     public Scan(String in) {
