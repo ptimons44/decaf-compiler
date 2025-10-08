@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -61,7 +62,7 @@ public class Scan {
 
     private int start = 0; // inclusive
     private int end = 0; // non-inclusive
-    private Character lastChar = null;
+    private Optional<Character> lastChar = Optional.empty();
     private int lineNumber = 1;
     private boolean inSingleLineComment = false;
     private boolean inMultiLineComment = false;
@@ -110,7 +111,7 @@ public class Scan {
          */
 
         if (inWhitespace && Character.isWhitespace(c)) {
-            lastChar = c;
+            lastChar = Optional.of(c);
             return; // continue gobbling Whitespace
         }
     
@@ -126,7 +127,7 @@ public class Scan {
         }
 
         if (inMultiLineComment) {
-            if (lastChar == '*' && c == '/') {  
+            if (lastChar.isPresent() && lastChar.get() == '*' && c == '/') {  
                 finishSequence(null);
                 return;
             }
@@ -136,7 +137,7 @@ public class Scan {
         // check if in string literal
         if (inStringLiteral) {
             // check if ended string literal
-            if (c == '"' && lastChar != '\\') {
+            if (c == '"' && lastChar.isPresent() && lastChar.get() != '\\') {
                 finishSequence(TokenType.STRINGLITERAL);
                 return;
             }
@@ -145,7 +146,7 @@ public class Scan {
         // check if in char literal
         if (inCharLiteral) {
             // check if ended char literal
-            if (c == '\'' && lastChar != '\\') {
+            if (c == '\'' && lastChar.isPresent() && lastChar.get() != '\\') {
                 finishSequence(TokenType.CHARLITERAL);
                 return;
             }
@@ -159,7 +160,7 @@ public class Scan {
         switch (c) {
             case '/' -> {
                 // check for single-line comment
-                if (lastChar == '/') {
+                if (lastChar.isPresent() && lastChar.get() == '/') {
                     inSingleLineComment = true;
                 }
                 // encountered /= | / operator
@@ -170,7 +171,7 @@ public class Scan {
             }
             case '*' -> {
                 // check for multi-line comment
-                if (lastChar == '/') {
+                if (lastChar.isPresent() && lastChar.get() == '/') {
                     inMultiLineComment = true;
                 }
                 // encountered *= | * operator
@@ -244,7 +245,7 @@ public class Scan {
                 inOperator = false;
             }
             case 'x', 'X' -> {
-                if (lastChar == '0') {
+                if (lastChar.isPresent() && lastChar.get() == '0') {
                     inHexLiteral = true;
                 }
                 break;
@@ -261,7 +262,7 @@ public class Scan {
             }
         }
 
-        lastChar = c;
+        lastChar = Optional.of(c);
     }
 
     public Scan(String in) {
