@@ -15,11 +15,6 @@ import java.util.List;
 
 public class ScanTest {
 
-    @BeforeAll
-    public static void setup() {
-        // Any necessary setup before all tests run
-        
-    }
 
     @ParameterizedTest
     @ArgumentsSource(PairedDirectoryArgumentProvider.class)
@@ -33,6 +28,7 @@ public class ScanTest {
         
         // Add your test logic here
         Scan scan = new Scan(inputContent);
+        scan.scan();
 
         try {
             // Write to our capture stream
