@@ -10,13 +10,24 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.nio.file.Path;
 import java.util.List;
 
+
 public class ParseTest {
 
+    // @Test
+    // public void scanTest() throws Exception {
+    //     String[] args = {};
+    //     Scan.main(args);
+    // }
+
     @ParameterizedTest
-    @ArgumentsSource(PairedDirectoryArgumentProvider.class)
-    public void testOutputMatchesExpectedOutput(String inputContent, String expectedOutput) {
-        System.out.println("Input: " + inputContent);
-        System.out.println("Expected Output: " + expectedOutput);
-        // Add your test logic here
+    @DirectorySource("src/test/public-tests/phase1-parser/public/illegal") // directory A
+    public void testBadProgramAssertFail(String in) {
+        System.out.println("testing file " + in);
+    }
+
+    @ParameterizedTest
+    @DirectorySource("src/test/public-tests/phase1-parser/public/legal") // directory A
+    public void testGoodProgramCompilesSucessfully(String in) {
+        System.out.println("testing file " + in);
     }
 }
