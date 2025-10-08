@@ -197,6 +197,9 @@ public class Scan {
                     inHexLiteral = false;
                     inDecimalLiteral = false;
                 }
+                else {
+                    inOperator = false;
+                }
             }
             case '!', '<', '>', '%' -> {
                 // encountered != | <= | >= | %= | ! | < | > | % operator
@@ -238,6 +241,7 @@ public class Scan {
                 }
 
                 inWhitespace = Character.isWhitespace(c);
+                inOperator = false;
             }
             case 'x', 'X' -> {
                 if (lastChar == '0') {
@@ -252,7 +256,8 @@ public class Scan {
                     finishSequence(TokenType.INTLITERAL);
                     warnings.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add("No Whitespace after hex literal");
                 }
-                // no processing required for remaining characters
+                // remaining characters
+                inOperator = false;
             }
         }
 
