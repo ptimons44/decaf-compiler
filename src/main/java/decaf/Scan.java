@@ -65,33 +65,33 @@ public class Scan {
     private int lineNumber = 1;
     private boolean inSingleLineComment = false;
     private boolean inMultiLineComment = false;
+    private boolean inWhitespace = false;
     private boolean inStringLiteral = false;
     private boolean inCharLiteral = false;
     private boolean inHexLiteral = false;
     private boolean inDecimalLiteral = false;
     private boolean inOperator = false;
 
-    private void endSequence() {
-        start = ++end;
-    }
-
-    private void endIgnoredSequence() {
-        inSingleLineComment = false;
-        inMultiLineComment = false;
-        // inStringLiteral = false;
-        // inCharLiteral = false;
-        // ignore this sequence and advance pointers
-        endSequence();
+    private boolean inIgnoredSequence() {
+        return inSingleLineComment || inMultiLineComment || inWhitespace;
     }
 
     private String getCurrentSubstring() {
         return in.substring(start, end);
     }
 
-    private void endTokenSequence(TokenType tokenType) {
-        String token = getCurrentSubstring();
-        tokens.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add(new AnnotString(token, tokenType, lineNumber));
-        endSequence();
+    private void finishSequence(TokenType tokenType) {
+        if (inIgnoredSequence()) {
+            inSingleLineComment = false;
+            inMultiLineComment = false;
+            inWhitespace = false;
+        }
+        else {
+            assert tokenType != null;
+            String token = getCurrentSubstring();
+            tokens.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add(new AnnotString(token, tokenType, lineNumber));
+        }
+        start = ++end;
     }
 
     private boolean canGobble() {
@@ -104,25 +104,30 @@ public class Scan {
         // if (end >= in.length()) return;
         char c = in.charAt(end++);
         if (c == '\n') lineNumber++;
+
+        /*
+         * Check for ignored sequences of whitespace, single line comments, and multi line comments
+         */
+
+        if (inWhitespace && Character.isWhitespace(c)) {
+            lastChar = c;
+            return; // continue gobbling Whitespace
+        }
+    
         
         /*
          * Check for closing of syntatic groups COMMENTS, STRING LITERALS, CHAR LITERALS
          */
-
-        // check if in single line comment
         if (inSingleLineComment) {
-            // check if ended single line comment
             if (c == '\n') {
-                endIgnoredSequence();
+                finishSequence(null);
                 return;
             }
         }
 
-        // check if in multi line comment
         if (inMultiLineComment) {
-            // check if ended multi line comment
             if (lastChar == '*' && c == '/') {  
-                endIgnoredSequence();
+                finishSequence(null);
                 return;
             }
 
@@ -132,7 +137,7 @@ public class Scan {
         if (inStringLiteral) {
             // check if ended string literal
             if (c == '"' && lastChar != '\\') {
-                endTokenSequence(TokenType.STRINGLITERAL);
+                finishSequence(TokenType.STRINGLITERAL);
                 return;
             }
         }
@@ -141,14 +146,14 @@ public class Scan {
         if (inCharLiteral) {
             // check if ended char literal
             if (c == '\'' && lastChar != '\\') {
-                endTokenSequence(TokenType.CHARLITERAL);
+                finishSequence(TokenType.CHARLITERAL);
                 return;
             }
         }
 
         /*
          * Check for opening of syntatic groups COMMENTS, STRING LITERALS, CHAR LITERALS
-         * Also check for token boundaries (whitespace, punctuation, hex literals)
+         * Also check for token boundaries (Whitespace, punctuation, hex literals)
          * Also check for multi-char operators (!=, <=, >=, ==, +=, -=, /=, *=, %=)
          */
         switch (c) {
@@ -177,7 +182,7 @@ public class Scan {
             case '=' -> {
                 // tokenizes +=, -=, *=, /=, %=, <=, !=, >= operator
                 if (inOperator) {
-                    endTokenSequence(TokenType.PUNCTUATION);
+                    finishSequence(TokenType.PUNCTUATION);
                     inOperator = false;
                 }
                 // encountered == | = operators
@@ -188,7 +193,7 @@ public class Scan {
             }
             case 'L' -> {
                 if (inHexLiteral || inDecimalLiteral) {
-                    endTokenSequence(TokenType.LONGLITERAL);
+                    finishSequence(TokenType.LONGLITERAL);
                     inHexLiteral = false;
                     inDecimalLiteral = false;
                 }
@@ -200,33 +205,39 @@ public class Scan {
             case '+', '-' -> {
                 // check for multi-char operators
                 if (inOperator) {
-                    endTokenSequence(TokenType.PUNCTUATION);
+                    finishSequence(TokenType.PUNCTUATION);
                     inOperator = false;
                 } else {
                     inOperator = true;
                 }
             }
             case ' ', '\t', '\r', '\n', '(', ')', '[', ']', ';' -> {
+                /*
+                 * whitespace check at beginning of function guarantees that this whitespace is
+                 * the exact end of a token
+                 */
                 if (inHexLiteral || inDecimalLiteral) {
-                    endTokenSequence(TokenType.INTLITERAL);
+                    finishSequence(TokenType.INTLITERAL);
                     inHexLiteral = false;
                     inDecimalLiteral = false;
                 }
                 else if (getCurrentSubstring().equals("true") || getCurrentSubstring().equals("false")) {
-                    endTokenSequence(TokenType.BOOLEANLITERAL);
+                    finishSequence(TokenType.BOOLEANLITERAL);
                 }
                 // classify keyword (use punctuation type for pretty-printing)
                 else if (keywords.contains(getCurrentSubstring())) {
-                    endTokenSequence(TokenType.PUNCTUATION); // keywords are treated as punctuation
+                    finishSequence(TokenType.PUNCTUATION); // keywords are treated as punctuation
                 }
                 // classify identifier
                 else if (Pattern.matches("[a-zA-Z_][a-zA-Z0-9_]*", getCurrentSubstring())) {
-                    endTokenSequence(TokenType.IDENTIFIER);
+                    finishSequence(TokenType.IDENTIFIER);
                 }
                 // classify punctuation
                 else {
-                    endTokenSequence(TokenType.PUNCTUATION);
+                    finishSequence(TokenType.PUNCTUATION);
                 }
+
+                inWhitespace = Character.isWhitespace(c);
             }
             case 'x', 'X' -> {
                 if (lastChar == '0') {
@@ -235,12 +246,13 @@ public class Scan {
                 break;
             }
             default -> {
-                // report error if non a-f or A-F char encountered in hex literal
-                if (!Pattern.matches("[0-9a-fA-F]", String.valueOf(c)) && inHexLiteral) {
+                // raise warning if non a-f or A-F char encountered in hex literal
+                if (inHexLiteral && !Pattern.matches("[0-9a-fA-F]", String.valueOf(c))) {
                     // end hex literal
-                    endTokenSequence(TokenType.INTLITERAL);
-                    warnings.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add("No whitespace after hex literal");
+                    finishSequence(TokenType.INTLITERAL);
+                    warnings.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add("No Whitespace after hex literal");
                 }
+                // no processing required for remaining characters
             }
         }
 
