@@ -44,6 +44,178 @@ public class Scan {
             }
     };
 
+    private static enum State {
+        START,
+        SLASH,
+        STAR,
+        MODULO,
+        PLUS,
+        MINUS,
+        EQUAL,
+        LESS_THAN,
+        GREATER_THAN,
+        BANG,
+        DIV_EQ,
+        MUL_EQ,
+        ADD_EQ,
+        SUB_EQ,
+        MOD_EQ,
+        LEQ,
+        GEQ,
+        NEQ,
+        EQEQ,
+        INCR,
+        DECR,
+        ZERO,
+        SINGLE_LINE_COMMENT,
+        MULTI_LINE_COMMENT,
+        MULTI_LINE_COMMENT_SLASH, // used for error check for nested comments
+        MULTI_LINE_COMMENT_STAR, // used to check for closing */
+        STRING_LITERAL,
+        STRING_LITERAL_IGNORE_NEXT,
+        CHAR_LITERAL,
+        HEX_LITERAL,
+        DEC_LITERAL,
+        IDENTIFIER,
+        END,
+        ERROR
+    }
+
+    static class DefaultMap extends HashMap<Character, State> {
+        private final State defaultValue;
+
+        public DefaultMap(State defaultValue) {
+            this.defaultValue = defaultValue;
+        }
+
+        @Override
+        public State get(Object key) {
+            return super.getOrDefault(key, defaultValue);
+        }
+
+        @SafeVarargs
+        public final void putAll(State value, Character... keys) {
+            for (Character key : keys) super.put(key, value);
+        }
+
+        public void putRange(State value, Character start, Character end) {
+            for (char c = start; c <= end; c++) super.put(c, value);
+        }
+    }
+
+    private static final Character EOF = null; // used to represent end of file
+
+    private static final Map<State, DefaultMap> transition = new HashMap<>();
+    static {
+        transition.put(State.START, new DefaultMap(State.ERROR) {{
+            putAll(State.SLASH, '/');
+            putAll(State.STAR, '*');
+            putAll(State.PLUS, '+');
+            putAll(State.MINUS, '-');
+            putAll(State.EQUAL, '=');
+            putAll(State.LESS_THAN, '<');
+            putAll(State.GREATER_THAN, '>');
+            putAll(State.BANG, '!');
+            putAll(State.MODULO, '%');
+            putAll(State.ZERO, '0');
+            putRange(State.DEC_LITERAL, '1', '9');
+            putRange(State.IDENTIFIER, 'a', 'z');
+            putRange(State.IDENTIFIER, 'A', 'Z');
+            putAll(State.IDENTIFIER, '_');
+            putAll(State.CHAR_LITERAL, '\'');
+            putAll(State.STRING_LITERAL, '"');
+            putAll(State.START, ' ', '\t', '\r', '\n');
+            putAll(State.START, '(', ')', '[', ']', ';', ',');
+            putAll(State.END, EOF);
+        }});
+        transition.put(State.SLASH, new DefaultMap(State.START) {{
+            putAll(State.SINGLE_LINE_COMMENT, '/');
+            putAll(State.MULTI_LINE_COMMENT, '*');
+            putAll(State.DIV_EQ, '=');
+        }});
+        transition.put(State.STAR, new DefaultMap(State.START) {{
+            putAll(State.MUL_EQ, '=');
+        }});
+        transition.put(State.PLUS, new DefaultMap(State.START) {{
+            putAll(State.ADD_EQ, '=');
+            putAll(State.INCR, '+');
+        }});
+        transition.put(State.MINUS, new DefaultMap(State.START) {{
+            putAll(State.SUB_EQ, '=');
+            putAll(State.DECR, '-');
+        }});
+        transition.put(State.EQUAL, new DefaultMap(State.START) {{
+            putAll(State.EQEQ, '=');
+        }});
+        transition.put(State.LESS_THAN, new DefaultMap(State.START) {{
+            putAll(State.LEQ, '=');
+        }});
+        transition.put(State.GREATER_THAN, new DefaultMap(State.START) {{
+            putAll(State.GEQ, '=');
+        }});
+        transition.put(State.BANG, new DefaultMap(State.START) {{
+            putAll(State.NEQ, '=');
+        }});
+        transition.put(State.MODULO, new DefaultMap(State.START) {{
+            putAll(State.MOD_EQ, '=');
+        }});
+        transition.put(State.ZERO, new DefaultMap(State.START) {{
+            putAll(State.HEX_LITERAL, 'x', 'X');
+            putRange(State.DEC_LITERAL, '0', '9');
+            putAll(State.DEC_LITERAL, '_');
+            putRange(State.ERROR, 'a', 'z');
+            putRange(State.ERROR, 'A', 'Z');
+        }});
+        transition.put(State.DEC_LITERAL, new DefaultMap(State.START) {{
+            putRange(State.DEC_LITERAL, '0', '9');
+            putAll(State.DEC_LITERAL, '_');
+            putRange(State.ERROR, 'a', 'z');
+            putRange(State.ERROR, 'A', 'Z');
+        }});
+        transition.put(State.HEX_LITERAL, new DefaultMap(State.START) {{
+            putRange(State.HEX_LITERAL, '0', '9');
+            putRange(State.HEX_LITERAL, 'a', 'f');
+            putRange(State.HEX_LITERAL, 'A', 'F');
+            putAll(State.HEX_LITERAL, '_');
+            putRange(State.ERROR, 'g', 'z');
+            putRange(State.ERROR, 'G', 'Z');
+        }});
+        transition.put(State.IDENTIFIER, new DefaultMap(State.START) {{
+            putRange(State.IDENTIFIER, 'a', 'z');
+            putRange(State.IDENTIFIER, 'A', 'Z');
+            putRange(State.IDENTIFIER, '0', '9');
+            putAll(State.IDENTIFIER, '_');
+        }});
+        transition.put(State.SINGLE_LINE_COMMENT, new DefaultMap(State.SINGLE_LINE_COMMENT) {{
+            putAll(State.START, '\n', EOF);
+        }});
+        transition.put(State.MULTI_LINE_COMMENT, new DefaultMap(State.MULTI_LINE_COMMENT) {{
+            putAll(State.MULTI_LINE_COMMENT_STAR, '*');
+            putAll(State.MULTI_LINE_COMMENT_SLASH, '/');
+        }});
+        transition.put(State.MULTI_LINE_COMMENT_SLASH, new DefaultMap(State.MULTI_LINE_COMMENT) {{
+            putAll(State.ERROR, '*'); // nested comment error
+            putAll(State.MULTI_LINE_COMMENT_SLASH, '/');
+        }});
+        transition.put(State.MULTI_LINE_COMMENT_STAR, new DefaultMap(State.MULTI_LINE_COMMENT) {{
+            putAll(State.START, '/');
+            putAll(State.MULTI_LINE_COMMENT_STAR, '*');
+        }});
+        transition.put(State.STRING_LITERAL, new DefaultMap(State.STRING_LITERAL) {{
+            putAll(State.STRING_LITERAL_IGNORE_NEXT, '\\');
+            putAll(State.START, '"');
+            putAll(State.ERROR, EOF);
+        }});
+        transition.put(State.STRING_LITERAL_IGNORE_NEXT, new DefaultMap(State.STRING_LITERAL) {{
+            putAll(State.ERROR, EOF);
+        }});
+        transition.put(State.CHAR_LITERAL, new DefaultMap(State.CHAR_LITERAL) {{
+            putAll(State.START, '\'');
+            putAll(State.ERROR, EOF);
+        }});
+        transition.put(State.END, new DefaultMap(State.END));
+    }
+
     private class AnnotString {
         String str;
         TokenType annotation;
@@ -70,18 +242,6 @@ public class Scan {
     private int end = 0; // non-inclusive
     private Optional<Character> lastChar = Optional.empty();
     private int lineNumber = 1;
-    private boolean inSingleLineComment = false;
-    private boolean inMultiLineComment = false;
-    private boolean inWhitespace = false;
-    private boolean inStringLiteral = false;
-    private boolean inCharLiteral = false;
-    private boolean inHexLiteral = false;
-    private boolean inDecimalLiteral = false;
-    private boolean inOperator = false;
-
-    private boolean inIgnoredSequence() {
-        return inSingleLineComment || inMultiLineComment || inWhitespace;
-    }
 
     private String getCurrentSubstring() {
         return in.substring(start, end);
@@ -102,172 +262,31 @@ public class Scan {
     }
 
     private boolean canGobble() {
-        return end < in.length();
+        return end <= in.length();
     }
 
     private void gobble() {
         assert canGobble();
-        // lastChar = in.charAt(end++);
-        // if (end >= in.length()) return;
-        char c = in.charAt(end++);
+        Character c;
+        if (end++ == in.length()) {
+            c = EOF;
+        } else {
+            c = in.charAt(end);
+        }
+
         if (c == '\n') lineNumber++;
 
-        /*
-         * Check for ignored sequences of whitespace, single line comments, and multi line comments
-         */
-
-        if (inWhitespace && Character.isWhitespace(c)) {
-            lastChar = Optional.of(c);
-            return; // continue gobbling Whitespace
+        State nextState = transition.get(currentState).get(c);
+        if (nextState == State.START) {
+        } 
+        else if (nextState == State.END) {
         }
-    
-        
-        /*
-         * Check for closing of syntatic groups COMMENTS, STRING LITERALS, CHAR LITERALS
-         */
-        if (inSingleLineComment) {
-            if (c == '\n') {
-                finishSequence(null);
-                return;
-            }
-        }
+        else if (nextState == State.ERROR) {
+            String errorMsg = "Unexpected character: '" + c + "'";
+            errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add(errorMsg);
+        } 
 
-        if (inMultiLineComment) {
-            if (lastChar.isPresent() && lastChar.get() == '*' && c == '/') {  
-                finishSequence(null);
-                return;
-            }
-
-        }
-            
-        // check if in string literal
-        if (inStringLiteral) {
-            // check if ended string literal
-            if (c == '"' && lastChar.isPresent() && lastChar.get() != '\\') {
-                finishSequence(TokenType.STRINGLITERAL);
-                return;
-            }
-        }
-            
-        // check if in char literal
-        if (inCharLiteral) {
-            // check if ended char literal
-            if (c == '\'' && lastChar.isPresent() && lastChar.get() != '\\') {
-                finishSequence(TokenType.CHARLITERAL);
-                return;
-            }
-        }
-
-        /*
-         * Check for opening of syntatic groups COMMENTS, STRING LITERALS, CHAR LITERALS
-         * Also check for token boundaries (Whitespace, punctuation, hex literals)
-         * Also check for multi-char operators (!=, <=, >=, ==, +=, -=, /=, *=, %=)
-         */
-        switch (c) {
-            case '/' -> {
-                // check for single-line comment
-                if (lastChar.isPresent() && lastChar.get() == '/') {
-                    inSingleLineComment = true;
-                }
-                // encountered /= | / operator
-                else {
-                    inOperator = true;
-                }
-                break;
-            }
-            case '*' -> {
-                // check for multi-line comment
-                if (lastChar.isPresent() && lastChar.get() == '/') {
-                    inMultiLineComment = true;
-                }
-                // encountered *= | * operator
-                else {
-                    inOperator = true;
-                }
-                break;
-            }
-            case '=' -> {
-                // tokenizes +=, -=, *=, /=, %=, <=, !=, >= operator
-                if (inOperator) {
-                    finishSequence(TokenType.PUNCTUATION);
-                    inOperator = false;
-                }
-                // encountered == | = operators
-                else {
-                    inOperator = true;
-                }
-                break;
-            }
-            case 'L' -> {
-                if (inHexLiteral || inDecimalLiteral) {
-                    finishSequence(TokenType.LONGLITERAL);
-                    inHexLiteral = false;
-                    inDecimalLiteral = false;
-                }
-                else {
-                    inOperator = false;
-                }
-            }
-            case '!', '<', '>', '%' -> {
-                // encountered != | <= | >= | %= | ! | < | > | % operator
-                inOperator = false;
-            }
-            case '+', '-' -> {
-                // check for multi-char operators
-                if (inOperator) {
-                    finishSequence(TokenType.PUNCTUATION);
-                    inOperator = false;
-                } else {
-                    inOperator = true;
-                }
-            }
-            case ' ', '\t', '\r', '\n', '(', ')', '[', ']', ';' -> {
-                /*
-                 * whitespace check at beginning of function guarantees that this whitespace is
-                 * the exact end of a token
-                 */
-                if (inHexLiteral || inDecimalLiteral) {
-                    finishSequence(TokenType.INTLITERAL);
-                    inHexLiteral = false;
-                    inDecimalLiteral = false;
-                }
-                else if (getCurrentSubstring().equals("true") || getCurrentSubstring().equals("false")) {
-                    finishSequence(TokenType.BOOLEANLITERAL);
-                }
-                else if (keywords.contains(getCurrentSubstring())) {
-                    finishSequence(TokenType.KEYWORD); // keywords are treated as punctuation
-                }
-                // classify identifier
-                else if (Pattern.matches("[a-zA-Z_][a-zA-Z0-9_]*", getCurrentSubstring())) {
-                    finishSequence(TokenType.IDENTIFIER);
-                }
-                // classify punctuation
-                else {
-                    finishSequence(TokenType.PUNCTUATION);
-                }
-
-                inWhitespace = Character.isWhitespace(c);
-                inOperator = false;
-            }
-            case 'x', 'X' -> {
-                if (lastChar.isPresent() && lastChar.get() == '0') {
-                    inHexLiteral = true;
-                }
-                break;
-            }
-            default -> {
-                // raise warning if non a-f or A-F char encountered in hex literal
-                if (inHexLiteral && !Pattern.matches("[0-9a-fA-F]", String.valueOf(c))) {
-                    // end hex literal
-                    finishSequence(TokenType.INTLITERAL);
-                    warnings.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add("No Whitespace after hex literal");
-                }
-                // remaining characters
-                inOperator = false;
-            }
-        }
-
-        lastChar = Optional.of(c);
+        currentState = nextState;
     }
 
     public Scan(String in) {
