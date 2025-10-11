@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.regex.Pattern;
 
 public class Scan {
@@ -35,7 +36,12 @@ public class Scan {
     public static enum TokenType {
             CHARLITERAL, STRINGLITERAL, INTLITERAL,
             LONGLITERAL, BOOLEANLITERAL, IDENTIFIER, 
-            PUNCTUATION
+            PUNCTUATION, KEYWORD;
+        
+            public String toString() {
+                if (this == PUNCTUATION || this == KEYWORD) return " "; // punctuation is not annotated
+                return " " + this.name() + " ";
+            }
     };
 
     private class AnnotString {
@@ -51,12 +57,12 @@ public class Scan {
 
         @Override
         public String toString() {
-            return lineNumber + (annotation == TokenType.PUNCTUATION ? "" : " " + annotation.toString()) + " " + str;
+            return lineNumber + annotation.toString() + str;
         }
     }
 
     private final String in;
-    private Map<Integer, List<AnnotString>> tokens = new HashMap<>(); // maps line number to token
+    private Map<Integer, List<AnnotString>> tokens = new TreeMap<>(); // maps line number to token and maintains order for pretty printing
     private Map<Integer, List<String>> errors = new HashMap<>(); // maps line number to error message
     private Map<Integer, List<String>> warnings = new HashMap<>(); // maps line number to warning message
 
@@ -228,9 +234,8 @@ public class Scan {
                 else if (getCurrentSubstring().equals("true") || getCurrentSubstring().equals("false")) {
                     finishSequence(TokenType.BOOLEANLITERAL);
                 }
-                // classify keyword (use punctuation type for pretty-printing)
                 else if (keywords.contains(getCurrentSubstring())) {
-                    finishSequence(TokenType.PUNCTUATION); // keywords are treated as punctuation
+                    finishSequence(TokenType.KEYWORD); // keywords are treated as punctuation
                 }
                 // classify identifier
                 else if (Pattern.matches("[a-zA-Z_][a-zA-Z0-9_]*", getCurrentSubstring())) {
