@@ -80,7 +80,10 @@ public class Scan {
         MULTI_LINE_COMMENT_STAR, // used to check for closing */
         STRING_LITERAL,
         STRING_LITERAL_IGNORE_NEXT,
+        STRING_LITERAL_END,
         CHAR_LITERAL,
+        CHAR_LITERAL_IGNORE_NEXT,
+        CHAR_LITERAL_END,
         HEX_LITERAL,
         DEC_LITERAL,
         LONG_LITERAL,
@@ -91,16 +94,20 @@ public class Scan {
 
         public TokenType toTokenType(String token) throws IllegalSyntaxException  {
             switch (this) {
-                case CHAR_LITERAL:
-                    if (token.length() == 1) {
+                case CHAR_LITERAL_END:
+                    if (Pattern.matches("'(\\\\[btnfr'\"\\\\]|[^\\\\'])'", token)) {
                         return TokenType.CHARLITERAL;
                     } 
                     else {
                         throw new IllegalSyntaxException("Invalid char literal: " + token);
                     }
-                    
-                case STRING_LITERAL:
-                    return TokenType.STRINGLITERAL;
+                case STRING_LITERAL_END:
+                    if (Pattern.matches("\"(\\\\[btnfr'\"\\\\]|[^\\\\\"])*\"", token)) {
+                        return TokenType.STRINGLITERAL;
+                    } 
+                    else {
+                        throw new IllegalSyntaxException("Invalid string literal: " + token);
+                    }
                 case LONG_LITERAL:
                     if (
                         Pattern.matches("[1-9][0-9]*(?:_+[0-9]+)*[Ll]", token) 
@@ -192,7 +199,7 @@ public class Scan {
             putRange(State.IDENTIFIER, 'A', 'Z');
             putAll(State.IDENTIFIER, '_');
             putAll(State.CHAR_LITERAL, '\'');
-            putAll(State.STRING_LITERAL, '"');
+            putAll(State.STRING_LITERAL, '\"');
             putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
             putAll(State.PUNCTUATION, '(', ')', '[', ']', ';', ',');
             putAll(State.END, EOF);
@@ -282,16 +289,25 @@ public class Scan {
         }});
         transition.put(State.STRING_LITERAL, new DefaultMap(State.STRING_LITERAL) {{
             putAll(State.STRING_LITERAL_IGNORE_NEXT, '\\');
-            putAll(State.START, '"');
+            putAll(State.STRING_LITERAL_END, '"');
             putAll(State.ERROR, EOF);
         }});
         transition.put(State.STRING_LITERAL_IGNORE_NEXT, new DefaultMap(State.STRING_LITERAL) {{
             putAll(State.ERROR, EOF); // no open string error
         }});
-        transition.put(State.CHAR_LITERAL, new DefaultMap(State.CHAR_LITERAL) {{
-            putAll(State.START, '\'');
+        transition.put(State.STRING_LITERAL_END, new DefaultMap(State.START) {{
             putAll(State.ERROR, EOF);
         }});
+        transition.put(State.CHAR_LITERAL, new DefaultMap(State.CHAR_LITERAL) {{
+            putAll(State.START, '\'');
+            putAll(State.CHAR_LITERAL_IGNORE_NEXT, '\\');
+            putAll(State.CHAR_LITERAL_END, '\'');
+            putAll(State.ERROR, EOF);
+        }});
+        transition.put(State.CHAR_LITERAL_IGNORE_NEXT, new DefaultMap(State.CHAR_LITERAL) {{
+            putAll(State.ERROR, EOF); // no close char error
+        }});
+        transition.put(State.CHAR_LITERAL_END, new DefaultMap(State.START));
         transition.put(State.DIV_EQ, new DefaultMap(State.START));
         transition.put(State.MUL_EQ, new DefaultMap(State.START));
         transition.put(State.ADD_EQ, new DefaultMap(State.START));
