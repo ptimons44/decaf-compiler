@@ -185,6 +185,11 @@ public class Scan {
         }
     }
 
+    private void putError(String msg) {
+        errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add(msg);
+        foundError = true;
+    };
+
     private static final Character EOF = null; // used to represent end of file
 
     private final DefaultMap<State, DefaultMap<Character, State>> transition = new DefaultMap<State, DefaultMap<Character, State>>(new DefaultMap<Character, State>(State.START));
@@ -281,18 +286,18 @@ public class Scan {
             
             // no open comment error
             putAll(State.ERROR, EOF);
-            putAction(EOF, () -> errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add("Unclosed multi-line comment"));
+            putAction(EOF, () -> putError("Unclosed multi-line comment"));
         }});
         transition.put(State.MULTI_LINE_COMMENT_SLASH, new DefaultMap<Character, State>(State.MULTI_LINE_COMMENT) {{
             putAll(State.MULTI_LINE_COMMENT_SLASH, '/');
 
             // nested comment error
             putAll(State.ERROR, '*'); 
-            putAction('*', () -> errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add("Nested multi-line comment are illegal"));
+            putAction('*', () -> putError("Nested multi-line comment are illegal"));
             
             // no open comment error
             putAll(State.ERROR, EOF); 
-            putAction(EOF, () -> errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add("Unclosed multi-line comment"));
+            putAction(EOF, () -> putError("Unclosed multi-line comment"));
         }});
         transition.put(State.MULTI_LINE_COMMENT_STAR, new DefaultMap<Character, State>(State.MULTI_LINE_COMMENT) {{
             putAll(State.MULTI_LINE_COMMENT_END, '/');
@@ -300,7 +305,7 @@ public class Scan {
 
             // no open comment error
             putAll(State.ERROR, EOF); 
-            putAction(EOF, () -> errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add("Unclosed multi-line comment"));
+            putAction(EOF, () -> putError("Unclosed multi-line comment"));
         }});
         transition.put(State.STRING_LITERAL, new DefaultMap<Character, State>(State.STRING_LITERAL) {{
             putAll(State.STRING_LITERAL_IGNORE_NEXT, '\\');
@@ -308,12 +313,12 @@ public class Scan {
             
             // unclosed string error
             putAll(State.ERROR, EOF);
-            putAction(EOF, () -> errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add("Unclosed string literal"));
+            putAction(EOF, () -> putError("Unclosed string literal"));
         }});
         transition.put(State.STRING_LITERAL_IGNORE_NEXT, new DefaultMap<Character, State>(State.STRING_LITERAL) {{
             // unclosed string error
             putAll(State.ERROR, EOF);
-            putAction(EOF, () -> errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add("Unclosed string literal"));
+            putAction(EOF, () -> putError("Unclosed string literal"));
         }});
         transition.put(State.CHAR_LITERAL, new DefaultMap<Character, State>(State.CHAR_LITERAL) {{
             putAll(State.START, '\'');
@@ -322,12 +327,12 @@ public class Scan {
             
             // unclosed char error
             putAll(State.ERROR, EOF);
-            putAction(EOF, () -> errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add("Unclosed char literal"));
+            putAction(EOF, () -> putError("Unclosed char literal"));
         }});
         transition.put(State.CHAR_LITERAL_IGNORE_NEXT, new DefaultMap<Character, State>(State.CHAR_LITERAL) {{
             // unclosed char error
             putAll(State.ERROR, EOF);
-            putAction(EOF, () -> errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add("Unclosed char literal"));
+            putAction(EOF, () -> putError("Unclosed char literal"));
         }});
         transition.put(State.AMPER, new DefaultMap<Character, State>(State.ERROR) {{
             putAll(State.AMPER_AMPER, '&');
@@ -366,8 +371,9 @@ public class Scan {
     private State currentState = State.START;
     private int lineNumber = 1;
 
+    private boolean foundError = false;
     private boolean canGobble() {
-        return end < in.length();
+        return !foundError && end < in.length();
     }
 
     private Character peek() {
@@ -403,14 +409,14 @@ public class Scan {
             } catch (IllegalSyntaxException e) {
                 String errorMsg = e.getMessage();
                 System.out.println("Error: " + errorMsg);
-                errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add(errorMsg);
+                putError(errorMsg);
             }
         } 
         else if (nextState == State.ERROR) {
             String token = in.substring(start, end);
             String errorMsg = "Unexpected character '" + c + "' after '" + token + "'";
             System.out.println("Error: " + errorMsg);
-            errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add(errorMsg);
+            putError(errorMsg);
         }
         
         currentState = nextState;
