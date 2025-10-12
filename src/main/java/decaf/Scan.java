@@ -241,11 +241,12 @@ public class Scan {
             putAll(State.MOD_EQ, '=');
         }});
         transition.put(State.ZERO, new DefaultMap(State.START) {{
-            putAll(State.HEX_LITERAL, 'x', 'X');
             putRange(State.DEC_LITERAL, '0', '9');
             putAll(State.DEC_LITERAL, '_');
             putRange(State.ERROR, 'a', 'z');
             putRange(State.ERROR, 'A', 'Z');
+            putAll(State.HEX_LITERAL, 'x', 'X'); // overwrites previous write
+            putAll(State.LONG_LITERAL, 'L', 'l'); // overwrites previous write
         }});
         transition.put(State.DEC_LITERAL, new DefaultMap(State.START) {{
             putRange(State.DEC_LITERAL, '0', '9');
@@ -374,7 +375,6 @@ public class Scan {
         System.out.println(currentState + " " + c);
         if (currentState == State.START) {
             currentState = transition.get(currentState).get(c);
-            System.out.println("Next state: " + currentState);
             start = end;
             return; // Always return to START state between terminal state transitions
         }
@@ -382,8 +382,10 @@ public class Scan {
             end++;
             c = peek();
         }
-
+        System.out.println("State: " + currentState);
+        System.out.println("Next char: " + c);
         State nextState = transition.get(currentState).get(c);
+        System.out.println("Next state: " + nextState);
         if (nextState == State.START) {
             String token = in.substring(start, end);
             System.out.println("Token: " + token);
@@ -398,6 +400,12 @@ public class Scan {
                 errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add(errorMsg);
             }
         } 
+        else if (nextState == State.ERROR) {
+            String token = in.substring(start, end);
+            String errorMsg = "Unexpected character '" + c + "' after '" + token + "'";
+            System.out.println("Error: " + errorMsg);
+            errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add(errorMsg);
+        }
         
         currentState = nextState;
         if (c != null && c == '\n') lineNumber++;
