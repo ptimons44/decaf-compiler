@@ -404,7 +404,7 @@ public class Scan {
                 }
             }
         }
-        return sb.toString();
+        return sb.toString().strip();
     }
 
     public void write(OutputStream outputStream) throws IOException {
