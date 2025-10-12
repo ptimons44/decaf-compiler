@@ -245,15 +245,18 @@ public class Scan {
             putAll(State.DEC_LITERAL, '_');
             putRange(State.ERROR, 'a', 'z');
             putRange(State.ERROR, 'A', 'Z');
-            putAll(State.HEX_LITERAL, 'x', 'X'); // overwrites previous write
-            putAll(State.LONG_LITERAL, 'L', 'l'); // overwrites previous write
+            putAll(State.HEX_LITERAL, 'x'); // overwrites previous write
+            putAll(State.START, 'X'); // overwrites previous write
+            putAll(State.LONG_LITERAL, 'L'); // overwrites previous write
+            putAll(State.START, 'l'); // overwrites previous write
         }});
         transition.put(State.DEC_LITERAL, new DefaultMap(State.START) {{
             putRange(State.DEC_LITERAL, '0', '9');
             putAll(State.DEC_LITERAL, '_');
             putRange(State.ERROR, 'a', 'z');
             putRange(State.ERROR, 'A', 'Z');
-            putAll(State.LONG_LITERAL, 'L', 'l'); // overwrites previous write
+            putAll(State.LONG_LITERAL, 'L'); // overwrites previous write
+            putAll(State.START, 'l'); // overwrites previous write
         }});
         transition.put(State.HEX_LITERAL, new DefaultMap(State.START) {{
             putRange(State.HEX_LITERAL, '0', '9');
@@ -262,7 +265,8 @@ public class Scan {
             putAll(State.HEX_LITERAL, '_');
             putRange(State.ERROR, 'g', 'z');
             putRange(State.ERROR, 'G', 'Z');
-            putAll(State.LONG_LITERAL, 'L', 'l');
+            putAll(State.LONG_LITERAL, 'L'); // overwrites previous write
+            putAll(State.START, 'l'); // overwrites previous write
         }});
         transition.put(State.LONG_LITERAL, new DefaultMap(State.START));
         transition.put(State.IDENTIFIER, new DefaultMap(State.START) {{
