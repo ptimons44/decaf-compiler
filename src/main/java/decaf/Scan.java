@@ -21,23 +21,6 @@ public class Scan {
             super(message);
         }
     }
-    
-    // excluding keywords that are literals (false, true)
-    public static final Set<String> keywords = new HashSet<>(Arrays.asList(
-            "if",
-            "bool",
-            "break",
-            "import",
-            "continue",
-            "else",
-            "for",
-            "while",
-            "int",
-            "long",
-            "return",
-            "len",
-            "void"
-    ));
 
     public static enum TokenType {
             CHARLITERAL, STRINGLITERAL, INTLITERAL,
@@ -161,23 +144,23 @@ public class Scan {
         }
     }
 
-    static class DefaultMap extends HashMap<Character, State> {
-        private final State defaultValue;
-        private Map<Character, Runnable> actions;
+    static class DefaultMap<K extends Comparable<K>, V> extends HashMap<K, V> {
+        private final V defaultValue;
+        private Map<K, Runnable> actions;
 
-        public DefaultMap(State defaultValue) {
+        public DefaultMap(V defaultValue) {
             this.defaultValue = defaultValue;
             this.actions = new HashMap<>();
         }
 
         @Override
-        public State get(Object key) {
-            State next = super.getOrDefault(key, defaultValue);
+        public V get(Object key) {
+            V next = super.getOrDefault(key, defaultValue);
             if (actions.containsKey(next)) actions.get(next).run();
             return next;
         }
 
-        public final void putAction(Character transition, Runnable action) {
+        public final void putAction(K transition, Runnable action) {
             /*
              * IMPORTANT: only use to add warning and error messages
              */
@@ -185,20 +168,28 @@ public class Scan {
         }
 
         @SafeVarargs
-        public final void putAll(State value, Character... keys) {
-            for (Character key : keys) super.put(key, value);
+        public final void putAll(V value, K... keys) {
+            for (K key : keys) super.put(key, value);
         }
 
-        public void putRange(State value, Character start, Character end) {
-            for (char c = start; c <= end; c++) super.put(c, value);
+        public void putRange(V value, K start, K end) {
+            for (K c = start; c.compareTo(end) <= 0; c = increment(c)) super.put(c, value);
+        }
+
+        // Helper method to increment K (only works for Character type in this context)
+        private K increment(K c) {
+            if (c instanceof Character) {
+                return (K) Character.valueOf((char)(((Character) c) + 1));
+            }
+            throw new UnsupportedOperationException("Increment not supported for type " + c.getClass());
         }
     }
 
     private static final Character EOF = null; // used to represent end of file
 
-    private final Map<State, DefaultMap> transition = new HashMap<>();
+    private final DefaultMap<State, DefaultMap<Character, State>> transition = new DefaultMap<State, DefaultMap<Character, State>>(new DefaultMap<Character, State>(State.START));
     {
-        transition.put(State.START, new DefaultMap(State.ERROR) {{
+        transition.put(State.START, new DefaultMap<Character, State>(State.ERROR) {{
             putAll(State.SLASH, '/');
             putAll(State.STAR, '*');
             putAll(State.PLUS, '+');
@@ -221,42 +212,41 @@ public class Scan {
             putAll(State.PIPE, '|');
             putAll(State.END, EOF);
         }});
-        transition.put(State.PUNCTUATION, new DefaultMap(State.START));
-        transition.put(State.WHITESPACE, new DefaultMap(State.START) {{
+        transition.put(State.WHITESPACE, new DefaultMap<Character, State>(State.START) {{
             putAll(State.WHITESPACE, ' ', '\t', '\r', '\n', '\f');
         }});
-        transition.put(State.SLASH, new DefaultMap(State.START) {{
+        transition.put(State.SLASH, new DefaultMap<Character, State>(State.START) {{
             putAll(State.SINGLE_LINE_COMMENT, '/');
             putAll(State.MULTI_LINE_COMMENT, '*');
             putAll(State.DIV_EQ, '=');
         }});
-        transition.put(State.STAR, new DefaultMap(State.START) {{
+        transition.put(State.STAR, new DefaultMap<Character, State>(State.START) {{
             putAll(State.MUL_EQ, '=');
         }});
-        transition.put(State.PLUS, new DefaultMap(State.START) {{
+        transition.put(State.PLUS, new DefaultMap<Character, State>(State.START) {{
             putAll(State.ADD_EQ, '=');
             putAll(State.INCR, '+');
         }});
-        transition.put(State.MINUS, new DefaultMap(State.START) {{
+        transition.put(State.MINUS, new DefaultMap<Character, State>(State.START) {{
             putAll(State.SUB_EQ, '=');
             putAll(State.DECR, '-');
         }});
-        transition.put(State.EQUAL, new DefaultMap(State.START) {{
+        transition.put(State.EQUAL, new DefaultMap<Character, State>(State.START) {{
             putAll(State.EQEQ, '=');
         }});
-        transition.put(State.LESS_THAN, new DefaultMap(State.START) {{
+        transition.put(State.LESS_THAN, new DefaultMap<Character, State>(State.START) {{
             putAll(State.LEQ, '=');
         }});
-        transition.put(State.GREATER_THAN, new DefaultMap(State.START) {{
+        transition.put(State.GREATER_THAN, new DefaultMap<Character, State>(State.START) {{
             putAll(State.GEQ, '=');
         }});
-        transition.put(State.BANG, new DefaultMap(State.START) {{
+        transition.put(State.BANG, new DefaultMap<Character, State>(State.START) {{
             putAll(State.NEQ, '=');
         }});
-        transition.put(State.MODULO, new DefaultMap(State.START) {{
+        transition.put(State.MODULO, new DefaultMap<Character, State>(State.START) {{
             putAll(State.MOD_EQ, '=');
         }});
-        transition.put(State.ZERO, new DefaultMap(State.START) {{
+        transition.put(State.ZERO, new DefaultMap<Character, State>(State.START) {{
             putRange(State.DEC_LITERAL, '0', '9');
             putAll(State.DEC_LITERAL, '_');
             putAll(State.HEX_LITERAL, 'x'); 
@@ -264,29 +254,28 @@ public class Scan {
             putAll(State.LONG_LITERAL, 'L');
             putAll(State.START, 'l'); 
         }});
-        transition.put(State.DEC_LITERAL, new DefaultMap(State.START) {{
+        transition.put(State.DEC_LITERAL, new DefaultMap<Character, State>(State.START) {{
             putRange(State.DEC_LITERAL, '0', '9');
             putAll(State.DEC_LITERAL, '_');
             putAll(State.LONG_LITERAL, 'L');
         }});
-        transition.put(State.HEX_LITERAL, new DefaultMap(State.START) {{
+        transition.put(State.HEX_LITERAL, new DefaultMap<Character, State>(State.START) {{
             putRange(State.HEX_LITERAL, '0', '9');
             putRange(State.HEX_LITERAL, 'a', 'f');
             putRange(State.HEX_LITERAL, 'A', 'F');
             putAll(State.HEX_LITERAL, '_');
             putAll(State.LONG_LITERAL, 'L'); 
         }});
-        transition.put(State.LONG_LITERAL, new DefaultMap(State.START));
-        transition.put(State.IDENTIFIER, new DefaultMap(State.START) {{
+        transition.put(State.IDENTIFIER, new DefaultMap<Character, State>(State.START) {{
             putRange(State.IDENTIFIER, 'a', 'z');
             putRange(State.IDENTIFIER, 'A', 'Z');
             putRange(State.IDENTIFIER, '0', '9');
             putAll(State.IDENTIFIER, '_'); // overwrites previous write
         }});
-        transition.put(State.SINGLE_LINE_COMMENT, new DefaultMap(State.SINGLE_LINE_COMMENT) {{
+        transition.put(State.SINGLE_LINE_COMMENT, new DefaultMap<Character, State>(State.SINGLE_LINE_COMMENT) {{
             putAll(State.START, '\n', EOF);
         }});
-        transition.put(State.MULTI_LINE_COMMENT, new DefaultMap(State.MULTI_LINE_COMMENT) {{
+        transition.put(State.MULTI_LINE_COMMENT, new DefaultMap<Character, State>(State.MULTI_LINE_COMMENT) {{
             putAll(State.MULTI_LINE_COMMENT_STAR, '*');
             putAll(State.MULTI_LINE_COMMENT_SLASH, '/');
             
@@ -294,7 +283,7 @@ public class Scan {
             putAll(State.ERROR, EOF);
             putAction(EOF, () -> errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add("Unclosed multi-line comment"));
         }});
-        transition.put(State.MULTI_LINE_COMMENT_SLASH, new DefaultMap(State.MULTI_LINE_COMMENT) {{
+        transition.put(State.MULTI_LINE_COMMENT_SLASH, new DefaultMap<Character, State>(State.MULTI_LINE_COMMENT) {{
             putAll(State.MULTI_LINE_COMMENT_SLASH, '/');
 
             // nested comment error
@@ -305,7 +294,7 @@ public class Scan {
             putAll(State.ERROR, EOF); 
             putAction(EOF, () -> errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add("Unclosed multi-line comment"));
         }});
-        transition.put(State.MULTI_LINE_COMMENT_STAR, new DefaultMap(State.MULTI_LINE_COMMENT) {{
+        transition.put(State.MULTI_LINE_COMMENT_STAR, new DefaultMap<Character, State>(State.MULTI_LINE_COMMENT) {{
             putAll(State.MULTI_LINE_COMMENT_END, '/');
             putAll(State.MULTI_LINE_COMMENT_STAR, '*');
 
@@ -313,8 +302,7 @@ public class Scan {
             putAll(State.ERROR, EOF); 
             putAction(EOF, () -> errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add("Unclosed multi-line comment"));
         }});
-        transition.put(State.MULTI_LINE_COMMENT_END, new DefaultMap(State.START));
-        transition.put(State.STRING_LITERAL, new DefaultMap(State.STRING_LITERAL) {{
+        transition.put(State.STRING_LITERAL, new DefaultMap<Character, State>(State.STRING_LITERAL) {{
             putAll(State.STRING_LITERAL_IGNORE_NEXT, '\\');
             putAll(State.STRING_LITERAL_END, '"');
             
@@ -322,13 +310,12 @@ public class Scan {
             putAll(State.ERROR, EOF);
             putAction(EOF, () -> errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add("Unclosed string literal"));
         }});
-        transition.put(State.STRING_LITERAL_IGNORE_NEXT, new DefaultMap(State.STRING_LITERAL) {{
+        transition.put(State.STRING_LITERAL_IGNORE_NEXT, new DefaultMap<Character, State>(State.STRING_LITERAL) {{
             // unclosed string error
             putAll(State.ERROR, EOF);
             putAction(EOF, () -> errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add("Unclosed string literal"));
         }});
-        transition.put(State.STRING_LITERAL_END, new DefaultMap(State.START));
-        transition.put(State.CHAR_LITERAL, new DefaultMap(State.CHAR_LITERAL) {{
+        transition.put(State.CHAR_LITERAL, new DefaultMap<Character, State>(State.CHAR_LITERAL) {{
             putAll(State.START, '\'');
             putAll(State.CHAR_LITERAL_IGNORE_NEXT, '\\');
             putAll(State.CHAR_LITERAL_END, '\'');
@@ -337,33 +324,20 @@ public class Scan {
             putAll(State.ERROR, EOF);
             putAction(EOF, () -> errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add("Unclosed char literal"));
         }});
-        transition.put(State.CHAR_LITERAL_IGNORE_NEXT, new DefaultMap(State.CHAR_LITERAL) {{
+        transition.put(State.CHAR_LITERAL_IGNORE_NEXT, new DefaultMap<Character, State>(State.CHAR_LITERAL) {{
             // unclosed char error
             putAll(State.ERROR, EOF);
             putAction(EOF, () -> errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add("Unclosed char literal"));
         }});
-        transition.put(State.CHAR_LITERAL_END, new DefaultMap(State.START));
-        transition.put(State.AMPER, new DefaultMap(State.ERROR) {{
+        transition.put(State.AMPER, new DefaultMap<Character, State>(State.ERROR) {{
             putAll(State.AMPER_AMPER, '&');
         }});
-        transition.put(State.AMPER_AMPER, new DefaultMap(State.START));
-        transition.put(State.PIPE, new DefaultMap(State.ERROR) {{
+        transition.put(State.AMPER_AMPER, new DefaultMap<Character, State>(State.START));
+        transition.put(State.PIPE, new DefaultMap<Character, State>(State.ERROR) {{
             putAll(State.PIPE_PIPE, '|');
         }});
-        transition.put(State.PIPE_PIPE, new DefaultMap(State.START));
-        transition.put(State.DIV_EQ, new DefaultMap(State.START));
-        transition.put(State.MUL_EQ, new DefaultMap(State.START));
-        transition.put(State.ADD_EQ, new DefaultMap(State.START));
-        transition.put(State.SUB_EQ, new DefaultMap(State.START));
-        transition.put(State.MOD_EQ, new DefaultMap(State.START));
-        transition.put(State.LEQ, new DefaultMap(State.START));
-        transition.put(State.GEQ, new DefaultMap(State.START));
-        transition.put(State.NEQ, new DefaultMap(State.START));
-        transition.put(State.EQEQ, new DefaultMap(State.START));
-        transition.put(State.INCR, new DefaultMap(State.START));
-        transition.put(State.DECR, new DefaultMap(State.START));
-        transition.put(State.END, new DefaultMap(State.END));
-        transition.put(State.ERROR, new DefaultMap(State.ERROR));
+        transition.put(State.END, new DefaultMap<Character, State>(State.END));
+        transition.put(State.ERROR, new DefaultMap<Character, State>(State.ERROR));
     }
 
 
