@@ -205,7 +205,7 @@ public class Scan {
             putAll(State.IDENTIFIER, '_');
             putAll(State.CHAR_LITERAL, '\'');
             putAll(State.STRING_LITERAL, '\"');
-            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
+            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n', '\f');
             putAll(State.PUNCTUATION, '(', ')', '[', ']', '{', '}', ';', ',');
             putAll(State.AMPER, '&');
             putAll(State.PIPE, '|');
@@ -213,7 +213,7 @@ public class Scan {
         }});
         transition.put(State.PUNCTUATION, new DefaultMap(State.START));
         transition.put(State.WHITESPACE, new DefaultMap(State.START) {{
-            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
+            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n', '\f');
         }});
         transition.put(State.SLASH, new DefaultMap(State.START) {{
             putAll(State.SINGLE_LINE_COMMENT, '/');
