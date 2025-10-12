@@ -52,6 +52,7 @@ public class Scan {
 
     private static enum State {
         START,
+        PUNCTUATION,
         SLASH,
         STAR,
         MODULO,
@@ -87,21 +88,6 @@ public class Scan {
         WHITESPACE,
         END,
         ERROR;
-
-        public boolean isEndOfPreviousToken() {
-            return 
-                this == START || 
-                this == WHITESPACE || 
-                this == SLASH ||
-                this == STAR ||
-                this == MODULO ||
-                this == PLUS ||
-                this == MINUS ||
-                this == EQUAL ||
-                this == LESS_THAN ||
-                this == GREATER_THAN ||
-                this == BANG;
-        }
 
         public TokenType toTokenType(String token) throws IllegalSyntaxException  {
             switch (this) {
@@ -208,69 +194,43 @@ public class Scan {
             putAll(State.CHAR_LITERAL, '\'');
             putAll(State.STRING_LITERAL, '"');
             putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
-            putAll(State.START, '(', ')', '[', ']', ';', ',');
+            putAll(State.PUNCTUATION, '(', ')', '[', ']', ';', ',');
             putAll(State.END, EOF);
         }});
-        transition.put(State.WHITESPACE, new DefaultMap(State.ERROR) {{ // IDENTICAL TO START
-            putAll(State.SLASH, '/');
-            putAll(State.STAR, '*');
-            putAll(State.PLUS, '+');
-            putAll(State.MINUS, '-');
-            putAll(State.EQUAL, '=');
-            putAll(State.LESS_THAN, '<');
-            putAll(State.GREATER_THAN, '>');
-            putAll(State.BANG, '!');
-            putAll(State.MODULO, '%');
-            putAll(State.ZERO, '0');
-            putRange(State.DEC_LITERAL, '1', '9');
-            putRange(State.IDENTIFIER, 'a', 'z');
-            putRange(State.IDENTIFIER, 'A', 'Z');
-            putAll(State.IDENTIFIER, '_');
-            putAll(State.CHAR_LITERAL, '\'');
-            putAll(State.STRING_LITERAL, '"');
+        transition.put(State.PUNCTUATION, new DefaultMap(State.START));
+        transition.put(State.WHITESPACE, new DefaultMap(State.START) {{
             putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
-            putAll(State.START, '(', ')', '[', ']', ';', ',');
-            putAll(State.END, EOF);
         }});
         transition.put(State.SLASH, new DefaultMap(State.START) {{
             putAll(State.SINGLE_LINE_COMMENT, '/');
             putAll(State.MULTI_LINE_COMMENT, '*');
             putAll(State.DIV_EQ, '=');
-            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
         }});
         transition.put(State.STAR, new DefaultMap(State.START) {{
             putAll(State.MUL_EQ, '=');
-            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
         }});
         transition.put(State.PLUS, new DefaultMap(State.START) {{
             putAll(State.ADD_EQ, '=');
             putAll(State.INCR, '+');
-            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
         }});
         transition.put(State.MINUS, new DefaultMap(State.START) {{
             putAll(State.SUB_EQ, '=');
             putAll(State.DECR, '-');
-            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
         }});
         transition.put(State.EQUAL, new DefaultMap(State.START) {{
             putAll(State.EQEQ, '=');
-            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
         }});
         transition.put(State.LESS_THAN, new DefaultMap(State.START) {{
             putAll(State.LEQ, '=');
-            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
         }});
         transition.put(State.GREATER_THAN, new DefaultMap(State.START) {{
             putAll(State.GEQ, '=');
-            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
         }});
         transition.put(State.BANG, new DefaultMap(State.START) {{
             putAll(State.NEQ, '=');
-            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
         }});
         transition.put(State.MODULO, new DefaultMap(State.START) {{
             putAll(State.MOD_EQ, '=');
-            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
         }});
         transition.put(State.ZERO, new DefaultMap(State.START) {{
             putAll(State.HEX_LITERAL, 'x', 'X');
@@ -278,7 +238,6 @@ public class Scan {
             putAll(State.DEC_LITERAL, '_');
             putRange(State.ERROR, 'a', 'z');
             putRange(State.ERROR, 'A', 'Z');
-            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
         }});
         transition.put(State.DEC_LITERAL, new DefaultMap(State.START) {{
             putRange(State.DEC_LITERAL, '0', '9');
@@ -286,8 +245,6 @@ public class Scan {
             putRange(State.ERROR, 'a', 'z');
             putRange(State.ERROR, 'A', 'Z');
             putAll(State.LONG_LITERAL, 'L', 'l'); // overwrites previous write
-            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
-            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
         }});
         transition.put(State.HEX_LITERAL, new DefaultMap(State.START) {{
             putRange(State.HEX_LITERAL, '0', '9');
@@ -297,20 +254,16 @@ public class Scan {
             putRange(State.ERROR, 'g', 'z');
             putRange(State.ERROR, 'G', 'Z');
             putAll(State.LONG_LITERAL, 'L', 'l');
-            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
         }});
-        transition.put(State.LONG_LITERAL, new DefaultMap(State.START) {{
-            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
-        }});
+        transition.put(State.LONG_LITERAL, new DefaultMap(State.START));
         transition.put(State.IDENTIFIER, new DefaultMap(State.START) {{
             putRange(State.IDENTIFIER, 'a', 'z');
             putRange(State.IDENTIFIER, 'A', 'Z');
             putRange(State.IDENTIFIER, '0', '9');
             putAll(State.IDENTIFIER, '_'); // overwrites previous write
-            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
         }});
         transition.put(State.SINGLE_LINE_COMMENT, new DefaultMap(State.SINGLE_LINE_COMMENT) {{
-            putAll(State.WHITESPACE, '\n', EOF);
+            putAll(State.START, '\n', EOF);
         }});
         transition.put(State.MULTI_LINE_COMMENT, new DefaultMap(State.MULTI_LINE_COMMENT) {{
             putAll(State.MULTI_LINE_COMMENT_STAR, '*');
@@ -339,8 +292,21 @@ public class Scan {
             putAll(State.START, '\'');
             putAll(State.ERROR, EOF);
         }});
+        transition.put(State.DIV_EQ, new DefaultMap(State.START));
+        transition.put(State.MUL_EQ, new DefaultMap(State.START));
+        transition.put(State.ADD_EQ, new DefaultMap(State.START));
+        transition.put(State.SUB_EQ, new DefaultMap(State.START));
+        transition.put(State.MOD_EQ, new DefaultMap(State.START));
+        transition.put(State.LEQ, new DefaultMap(State.START));
+        transition.put(State.GEQ, new DefaultMap(State.START));
+        transition.put(State.NEQ, new DefaultMap(State.START));
+        transition.put(State.EQEQ, new DefaultMap(State.START));
+        transition.put(State.INCR, new DefaultMap(State.START));
+        transition.put(State.DECR, new DefaultMap(State.START));
         transition.put(State.END, new DefaultMap(State.END));
+        transition.put(State.ERROR, new DefaultMap(State.ERROR));
     }
+
 
     private class StateString {
         String str;
@@ -367,26 +333,40 @@ public class Scan {
     private State currentState = State.START;
     private int lineNumber = 1;
 
+    static final int MAX_ITERS = 1000;
+    private int curIters = 0;
     private boolean canGobble() {
-        return end < in.length();
+        return end < in.length() && curIters < MAX_ITERS;
+    }
+
+    private Character peek() {
+        if (end == in.length()) {
+            return EOF;
+        } else {
+            return in.charAt(end);
+        }
     }
 
     private void gobble() {
+        curIters++;
         assert canGobble();
-        System.out.println(currentState);
-        Character c;
-        if (++end == in.length()) { // invariant: this is the only place end is incremented
-            c = EOF;
-        } else {
-            assert end < in.length();
-            c = in.charAt(end);
+        
+        
+        Character c = peek();
+        System.out.println(currentState + " " + c);
+        if (currentState == State.START) {
+            currentState = transition.get(currentState).get(c);
+            System.out.println("Next state: " + currentState);
+            start = end;
+            return; // Always return to START state between terminal state transitions
+        }
+        else {
+            end++;
+            c = peek();
         }
 
         State nextState = transition.get(currentState).get(c);
-        if (currentState == State.WHITESPACE) {
-            start = end;
-        }
-        else if (nextState.isEndOfPreviousToken()) {
+        if (nextState == State.START) {
             String token = in.substring(start, end);
             System.out.println("Token: " + token);
             TokenType tokenType;
@@ -399,14 +379,7 @@ public class Scan {
                 System.out.println("Error: " + errorMsg);
                 errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add(errorMsg);
             }
-            start = end;
         } 
-        else if (nextState == State.END) {
-        }
-        else if (nextState == State.ERROR) {
-            String errorMsg = "Unexpected character: '" + c + "'";
-            errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add(errorMsg);
-        }
         
         currentState = nextState;
         if (c != null && c == '\n') lineNumber++;
