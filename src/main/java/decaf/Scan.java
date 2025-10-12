@@ -128,7 +128,7 @@ public class Scan {
                         throw new IllegalSyntaxException("Invalid hex literal: " + token);
                     }
                 case DEC_LITERAL:
-                    if (Pattern.matches("[1-9][0-9]*(?:_+[0-9]+)*", token) || Pattern.matches("0", token)) {
+                    if (Pattern.matches("[0-9]*(?:_+[0-9]+)*", token) || Pattern.matches("0", token)) {
                         return TokenType.INTLITERAL;
                     } 
                     else {
