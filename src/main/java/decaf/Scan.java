@@ -298,9 +298,7 @@ public class Scan {
         transition.put(State.STRING_LITERAL_IGNORE_NEXT, new DefaultMap(State.STRING_LITERAL) {{
             putAll(State.ERROR, EOF); // no open string error
         }});
-        transition.put(State.STRING_LITERAL_END, new DefaultMap(State.START) {{
-            putAll(State.ERROR, EOF);
-        }});
+        transition.put(State.STRING_LITERAL_END, new DefaultMap(State.START));
         transition.put(State.CHAR_LITERAL, new DefaultMap(State.CHAR_LITERAL) {{
             putAll(State.START, '\'');
             putAll(State.CHAR_LITERAL_IGNORE_NEXT, '\\');
