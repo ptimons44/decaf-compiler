@@ -380,7 +380,6 @@ public class Scan {
         } else {
             assert end < in.length();
             c = in.charAt(end);
-            if (c == '\n') lineNumber++;
         }
 
         State nextState = transition.get(currentState).get(c);
@@ -410,6 +409,7 @@ public class Scan {
         }
         
         currentState = nextState;
+        if (c != null && c == '\n') lineNumber++;
     }
 
     public Scan(String in) {
