@@ -115,9 +115,8 @@ public class Scan {
                     }
                 case LONG_LITERAL:
                     if (
-                        Pattern.matches("[1-9][0-9]*(?:_+[0-9]+)*[Ll]", token) 
+                        Pattern.matches("[0-9]*(?:_+[0-9]+)*[Ll]", token) 
                         || Pattern.matches("0[xX][0-9A-Fa-f]+(?:_+[0-9A-Fa-f]+)*[Ll]", token)
-                        || Pattern.matches("0[Ll]", token)
                     ) {
                         return TokenType.LONGLITERAL;
                     } 
