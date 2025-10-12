@@ -29,10 +29,10 @@ public class ValidInputArgumentProvider implements ArgumentsProvider {
         }
         
         // Get all files from input directory mapped by base filename (without extension)
-        // Filter for files containing "-valid"
+        // Filter for files NOT containing "invalid"
         Map<String, Path> inputFiles = Files.list(inputDir)
                 .filter(Files::isRegularFile)
-                .filter(path -> path.getFileName().toString().contains("-valid"))
+                .filter(path -> !path.getFileName().toString().contains("invalid"))
                 .collect(Collectors.toMap(
                     path -> getBaseName(path.getFileName().toString()),
                     Function.identity()
@@ -41,7 +41,7 @@ public class ValidInputArgumentProvider implements ArgumentsProvider {
         // Get all files from output directory and pair with input files
         return Files.list(outputDir)
                 .filter(Files::isRegularFile)
-                .filter(path -> path.getFileName().toString().contains("-valid"))
+                .filter(path -> !path.getFileName().toString().contains("invalid"))
                 .sorted()
                 .map(outputPath -> {
                     String outputFilename = outputPath.getFileName().toString();
