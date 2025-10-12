@@ -339,7 +339,11 @@ public class Scan {
 
             // line break in char error
             putAll(State.ERROR, '\n');
-            putAction('\n', () -> putError("Newline in char literal"));
+            putAction('\n', () -> putError("Newline or tab in char literal"));
+
+            // tab in char error
+            putAll(State.ERROR, '\t');
+            putAction('\t', () -> putError("Tab in char literal"));
 
             // unescaped char error
             putAll(State.ERROR, '\"');
