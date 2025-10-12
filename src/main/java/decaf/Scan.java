@@ -310,7 +310,7 @@ public class Scan {
             putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
         }});
         transition.put(State.SINGLE_LINE_COMMENT, new DefaultMap(State.SINGLE_LINE_COMMENT) {{
-            putAll(State.START, '\n', EOF);
+            putAll(State.WHITESPACE, '\n', EOF);
         }});
         transition.put(State.MULTI_LINE_COMMENT, new DefaultMap(State.MULTI_LINE_COMMENT) {{
             putAll(State.MULTI_LINE_COMMENT_STAR, '*');
