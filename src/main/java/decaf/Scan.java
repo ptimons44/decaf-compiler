@@ -78,6 +78,7 @@ public class Scan {
         MULTI_LINE_COMMENT,
         MULTI_LINE_COMMENT_SLASH, // used for error check for nested comments
         MULTI_LINE_COMMENT_STAR, // used to check for closing */
+        MULTI_LINE_COMMENT_END,
         STRING_LITERAL,
         STRING_LITERAL_IGNORE_NEXT,
         STRING_LITERAL_END,
@@ -149,7 +150,7 @@ public class Scan {
                                 throw new IllegalSyntaxException("Invalid identifier: " + token);
                             }
                     }
-                case SINGLE_LINE_COMMENT, MULTI_LINE_COMMENT, WHITESPACE:
+                case SINGLE_LINE_COMMENT, MULTI_LINE_COMMENT_END, WHITESPACE:
                     return TokenType.IGNORE;
                 default:
                     return TokenType.PUNCTUATION;
@@ -283,10 +284,11 @@ public class Scan {
             putAll(State.ERROR, EOF); // no open comment error
         }});
         transition.put(State.MULTI_LINE_COMMENT_STAR, new DefaultMap(State.MULTI_LINE_COMMENT) {{
-            putAll(State.START, '/');
+            putAll(State.MULTI_LINE_COMMENT_END, '/');
             putAll(State.MULTI_LINE_COMMENT_STAR, '*');
             putAll(State.ERROR, EOF); // no open comment error
         }});
+        transition.put(State.MULTI_LINE_COMMENT_END, new DefaultMap(State.START));
         transition.put(State.STRING_LITERAL, new DefaultMap(State.STRING_LITERAL) {{
             putAll(State.STRING_LITERAL_IGNORE_NEXT, '\\');
             putAll(State.STRING_LITERAL_END, '"');
