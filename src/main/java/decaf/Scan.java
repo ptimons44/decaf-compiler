@@ -201,7 +201,7 @@ public class Scan {
             putAll(State.CHAR_LITERAL, '\'');
             putAll(State.STRING_LITERAL, '\"');
             putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
-            putAll(State.PUNCTUATION, '(', ')', '[', ']', ';', ',');
+            putAll(State.PUNCTUATION, '(', ')', '[', ']', '{', '}', ';', ',');
             putAll(State.END, EOF);
         }});
         transition.put(State.PUNCTUATION, new DefaultMap(State.START));
