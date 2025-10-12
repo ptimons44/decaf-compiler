@@ -359,10 +359,8 @@ public class Scan {
     private State currentState = State.START;
     private int lineNumber = 1;
 
-    static final int MAX_ITERS = 1000;
-    private int curIters = 0;
     private boolean canGobble() {
-        return end < in.length() && curIters < MAX_ITERS;
+        return end < in.length();
     }
 
     private Character peek() {
@@ -374,12 +372,10 @@ public class Scan {
     }
 
     private void gobble() {
-        curIters++;
         assert canGobble();
         
         
         Character c = peek();
-        System.out.println(currentState + " " + c);
         if (currentState == State.START) {
             currentState = transition.get(currentState).get(c);
             start = end;
@@ -389,17 +385,13 @@ public class Scan {
             end++;
             c = peek();
         }
-        System.out.println("State: " + currentState);
-        System.out.println("Next char: " + c);
         State nextState = transition.get(currentState).get(c);
-        System.out.println("Next state: " + nextState);
         if (nextState == State.START) {
             String token = in.substring(start, end);
-            System.out.println("Token: " + token);
             TokenType tokenType;
             try {
                 tokenType = currentState.toTokenType(token);
-                System.out.println("Type: " + tokenType);
+                System.out.println("Type: " + tokenType + " Token: " + token);
                 tokens.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add(new StateString(token, tokenType));
             } catch (IllegalSyntaxException e) {
                 String errorMsg = e.getMessage();
