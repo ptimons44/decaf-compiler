@@ -39,8 +39,8 @@ public class Scan {
             PUNCTUATION, KEYWORD;
         
             public String toString() {
-                if (this == PUNCTUATION || this == KEYWORD) return " "; // punctuation is not annotated
-                return " " + this.name() + " ";
+                if (this == PUNCTUATION || this == KEYWORD) return ""; // punctuation is not annotated
+                return this.name() + " ";
             }
     };
 
@@ -216,50 +216,35 @@ public class Scan {
         transition.put(State.END, new DefaultMap(State.END));
     }
 
-    private class AnnotString {
+    private class StateString {
         String str;
-        TokenType annotation;
-        Integer lineNumber;
+        TokenType tokenType;
 
-        public AnnotString(String str, TokenType annotation, Integer lineNumber) {
+        public StateString(String str, TokenType tokenType) {
             this.str = str;
-            this.annotation = annotation;
-            this.lineNumber = lineNumber;
+            this.tokenType = tokenType;
         }
 
         @Override
         public String toString() {
-            return lineNumber + annotation.toString() + str;
+            return tokenType.toString() + str;
         }
     }
 
     private final String in;
-    private Map<Integer, List<AnnotString>> tokens = new TreeMap<>(); // maps line number to token and maintains order for pretty printing
+    private Map<Integer, List<StateString>> tokens = new TreeMap<>(); // maps line number to token and maintains order for pretty printing
     private Map<Integer, List<String>> errors = new HashMap<>(); // maps line number to error message
     private Map<Integer, List<String>> warnings = new HashMap<>(); // maps line number to warning message
 
     private int start = 0; // inclusive
     private int end = 0; // non-inclusive
-    private Optional<Character> lastChar = Optional.empty();
+    private State currentState = State.START;
     private int lineNumber = 1;
 
     private String getCurrentSubstring() {
         return in.substring(start, end);
     }
 
-    private void finishSequence(TokenType tokenType) {
-        if (inIgnoredSequence()) {
-            inSingleLineComment = false;
-            inMultiLineComment = false;
-            inWhitespace = false;
-        }
-        else {
-            assert tokenType != null;
-            String token = getCurrentSubstring();
-            tokens.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add(new AnnotString(token, tokenType, lineNumber));
-        }
-        start = end;
-    }
 
     private boolean canGobble() {
         return end <= in.length();
@@ -268,7 +253,7 @@ public class Scan {
     private void gobble() {
         assert canGobble();
         Character c;
-        if (end++ == in.length()) {
+        if (end++ == in.length()) { // invariant: this is the only place end is incremented
             c = EOF;
         } else {
             c = in.charAt(end);
@@ -278,6 +263,8 @@ public class Scan {
 
         State nextState = transition.get(currentState).get(c);
         if (nextState == State.START) {
+            String token = getCurrentSubstring();
+            tokens.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add(new StateString(token, currentState));
         } 
         else if (nextState == State.END) {
         }
@@ -302,8 +289,8 @@ public class Scan {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         for (int line : tokens.keySet()) {
-            for (AnnotString token : tokens.get(line)) {
-                sb.append(token.toString()).append("\n");
+            for (StateString token : tokens.get(line)) {
+                sb.append(Integer.valueOf(line).toString() + " ").append(token.toString()).append("\n");
             }
         }
         return sb.toString();
