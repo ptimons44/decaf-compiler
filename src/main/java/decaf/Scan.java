@@ -16,6 +16,12 @@ import java.util.TreeMap;
 import java.util.regex.Pattern;
 
 public class Scan {
+    static class IllegalSyntaxException extends Exception {
+        public IllegalSyntaxException(String message) {
+            super(message);
+        }
+    }
+    
     // excluding keywords that are literals (false, true)
     public static final Set<String> keywords = new HashSet<>(Arrays.asList(
             "if",
@@ -76,9 +82,68 @@ public class Scan {
         CHAR_LITERAL,
         HEX_LITERAL,
         DEC_LITERAL,
+        LONG_LITERAL,
         IDENTIFIER,
         END,
-        ERROR
+        ERROR;
+
+        public TokenType toTokenType(String token) throws IllegalSyntaxException  {
+            switch (this) {
+                case CHAR_LITERAL:
+                    if (token.length() == 1) {
+                        return TokenType.CHARLITERAL;
+                    } 
+                    else {
+                        throw new IllegalSyntaxException("Invalid char literal: " + token);
+                    }
+                    
+                case STRING_LITERAL:
+                    return TokenType.STRINGLITERAL;
+                case LONG_LITERAL:
+                    if (
+                        Pattern.matches("[1-9][0-9]*(?:_+[0-9]+)*[Ll]", token) 
+                        || Pattern.matches("0[xX][0-9A-Fa-f]+(?:_+[0-9A-Fa-f]+)*[Ll]", token)
+                        || Pattern.matches("0[Ll]", token)
+                    ) {
+                        return TokenType.LONGLITERAL;
+                    } 
+                    else {
+                        throw new IllegalSyntaxException("Invalid long literal: " + token);
+                    }
+                case HEX_LITERAL:
+                    if (Pattern.matches("0[xX][0-9A-Fa-f]+(?:_+[0-9A-Fa-f]+)*", token)) {
+                        return TokenType.INTLITERAL;
+                    } 
+                    else {
+                        throw new IllegalSyntaxException("Invalid hex literal: " + token);
+                    }
+                case DEC_LITERAL:
+                    if (Pattern.matches("[1-9][0-9]*(?:_+[0-9]+)*", token) || Pattern.matches("0", token)) {
+                        return TokenType.INTLITERAL;
+                    } 
+                    else {
+                        throw new IllegalSyntaxException("Invalid decimal literal: " + token);
+                    }
+                case ZERO:
+                    return TokenType.INTLITERAL;
+                case IDENTIFIER:
+                    switch (token) {
+                        case "true", "false":
+                            return TokenType.BOOLEANLITERAL;
+                        case "if", "bool", "break", "import", "continue", "else", "for", "while", "int", "long", "return", "len", "void":
+                            return TokenType.KEYWORD;
+                        default:
+                            if (Pattern.matches("[a-zA-Z_][a-zA-Z0-9_]*", token)) {
+                                return TokenType.IDENTIFIER;
+                            } 
+                            else {
+                                throw new IllegalSyntaxException("Invalid identifier: " + token);
+                            }
+                    }
+                default:
+                    return TokenType.PUNCTUATION;
+            }
+        }
     }
 
     static class DefaultMap extends HashMap<Character, State> {
@@ -171,6 +236,7 @@ public class Scan {
             putAll(State.DEC_LITERAL, '_');
             putRange(State.ERROR, 'a', 'z');
             putRange(State.ERROR, 'A', 'Z');
+            putAll(State.LONG_LITERAL, 'L', 'l'); // overwrites previous write
         }});
         transition.put(State.HEX_LITERAL, new DefaultMap(State.START) {{
             putRange(State.HEX_LITERAL, '0', '9');
@@ -179,12 +245,13 @@ public class Scan {
             putAll(State.HEX_LITERAL, '_');
             putRange(State.ERROR, 'g', 'z');
             putRange(State.ERROR, 'G', 'Z');
+            putAll(State.LONG_LITERAL, 'L', 'l');
         }});
         transition.put(State.IDENTIFIER, new DefaultMap(State.START) {{
             putRange(State.IDENTIFIER, 'a', 'z');
             putRange(State.IDENTIFIER, 'A', 'Z');
             putRange(State.IDENTIFIER, '0', '9');
-            putAll(State.IDENTIFIER, '_');
+            putAll(State.IDENTIFIER, '_'); // overwrites previous write
         }});
         transition.put(State.SINGLE_LINE_COMMENT, new DefaultMap(State.SINGLE_LINE_COMMENT) {{
             putAll(State.START, '\n', EOF);
@@ -192,14 +259,17 @@ public class Scan {
         transition.put(State.MULTI_LINE_COMMENT, new DefaultMap(State.MULTI_LINE_COMMENT) {{
             putAll(State.MULTI_LINE_COMMENT_STAR, '*');
             putAll(State.MULTI_LINE_COMMENT_SLASH, '/');
+            putAll(State.ERROR, EOF); // no open comment error
         }});
         transition.put(State.MULTI_LINE_COMMENT_SLASH, new DefaultMap(State.MULTI_LINE_COMMENT) {{
             putAll(State.ERROR, '*'); // nested comment error
             putAll(State.MULTI_LINE_COMMENT_SLASH, '/');
+            putAll(State.ERROR, EOF); // no open comment error
         }});
         transition.put(State.MULTI_LINE_COMMENT_STAR, new DefaultMap(State.MULTI_LINE_COMMENT) {{
             putAll(State.START, '/');
             putAll(State.MULTI_LINE_COMMENT_STAR, '*');
+            putAll(State.ERROR, EOF); // no open comment error
         }});
         transition.put(State.STRING_LITERAL, new DefaultMap(State.STRING_LITERAL) {{
             putAll(State.STRING_LITERAL_IGNORE_NEXT, '\\');
@@ -207,7 +277,7 @@ public class Scan {
             putAll(State.ERROR, EOF);
         }});
         transition.put(State.STRING_LITERAL_IGNORE_NEXT, new DefaultMap(State.STRING_LITERAL) {{
-            putAll(State.ERROR, EOF);
+            putAll(State.ERROR, EOF); // no open string error
         }});
         transition.put(State.CHAR_LITERAL, new DefaultMap(State.CHAR_LITERAL) {{
             putAll(State.START, '\'');
@@ -264,7 +334,15 @@ public class Scan {
         State nextState = transition.get(currentState).get(c);
         if (nextState == State.START) {
             String token = getCurrentSubstring();
-            tokens.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add(new StateString(token, currentState));
+            TokenType tokenType;
+            try {
+                tokenType = currentState.toTokenType(token);
+                tokens.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add(new StateString(token, tokenType));
+            } catch (IllegalSyntaxException e) {
+                String errorMsg = e.getMessage();
+                errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add(errorMsg);
+            }
+            start = end;
         } 
         else if (nextState == State.END) {
         }
