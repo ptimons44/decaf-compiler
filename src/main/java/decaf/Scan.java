@@ -42,7 +42,7 @@ public class Scan {
     public static enum TokenType {
             CHARLITERAL, STRINGLITERAL, INTLITERAL,
             LONGLITERAL, BOOLEANLITERAL, IDENTIFIER, 
-            PUNCTUATION, KEYWORD;
+            PUNCTUATION, KEYWORD, IGNORE;
         
             public String toString() {
                 if (this == PUNCTUATION || this == KEYWORD) return ""; // punctuation is not annotated
@@ -84,6 +84,7 @@ public class Scan {
         DEC_LITERAL,
         LONG_LITERAL,
         IDENTIFIER,
+        WHITESPACE,
         END,
         ERROR;
 
@@ -140,6 +141,8 @@ public class Scan {
                                 throw new IllegalSyntaxException("Invalid identifier: " + token);
                             }
                     }
+                case SINGLE_LINE_COMMENT, MULTI_LINE_COMMENT, START, WHITESPACE:
+                    return TokenType.IGNORE;
                 default:
                     return TokenType.PUNCTUATION;
             }
@@ -189,7 +192,7 @@ public class Scan {
             putAll(State.IDENTIFIER, '_');
             putAll(State.CHAR_LITERAL, '\'');
             putAll(State.STRING_LITERAL, '"');
-            putAll(State.START, ' ', '\t', '\r', '\n');
+            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
             putAll(State.START, '(', ')', '[', ']', ';', ',');
             putAll(State.END, EOF);
         }});
@@ -197,32 +200,41 @@ public class Scan {
             putAll(State.SINGLE_LINE_COMMENT, '/');
             putAll(State.MULTI_LINE_COMMENT, '*');
             putAll(State.DIV_EQ, '=');
+            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
         }});
         transition.put(State.STAR, new DefaultMap(State.START) {{
             putAll(State.MUL_EQ, '=');
+            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
         }});
         transition.put(State.PLUS, new DefaultMap(State.START) {{
             putAll(State.ADD_EQ, '=');
             putAll(State.INCR, '+');
+            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
         }});
         transition.put(State.MINUS, new DefaultMap(State.START) {{
             putAll(State.SUB_EQ, '=');
             putAll(State.DECR, '-');
+            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
         }});
         transition.put(State.EQUAL, new DefaultMap(State.START) {{
             putAll(State.EQEQ, '=');
+            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
         }});
         transition.put(State.LESS_THAN, new DefaultMap(State.START) {{
             putAll(State.LEQ, '=');
+            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
         }});
         transition.put(State.GREATER_THAN, new DefaultMap(State.START) {{
             putAll(State.GEQ, '=');
+            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
         }});
         transition.put(State.BANG, new DefaultMap(State.START) {{
             putAll(State.NEQ, '=');
+            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
         }});
         transition.put(State.MODULO, new DefaultMap(State.START) {{
             putAll(State.MOD_EQ, '=');
+            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
         }});
         transition.put(State.ZERO, new DefaultMap(State.START) {{
             putAll(State.HEX_LITERAL, 'x', 'X');
@@ -230,6 +242,7 @@ public class Scan {
             putAll(State.DEC_LITERAL, '_');
             putRange(State.ERROR, 'a', 'z');
             putRange(State.ERROR, 'A', 'Z');
+            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
         }});
         transition.put(State.DEC_LITERAL, new DefaultMap(State.START) {{
             putRange(State.DEC_LITERAL, '0', '9');
@@ -237,6 +250,8 @@ public class Scan {
             putRange(State.ERROR, 'a', 'z');
             putRange(State.ERROR, 'A', 'Z');
             putAll(State.LONG_LITERAL, 'L', 'l'); // overwrites previous write
+            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
+            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
         }});
         transition.put(State.HEX_LITERAL, new DefaultMap(State.START) {{
             putRange(State.HEX_LITERAL, '0', '9');
@@ -246,12 +261,17 @@ public class Scan {
             putRange(State.ERROR, 'g', 'z');
             putRange(State.ERROR, 'G', 'Z');
             putAll(State.LONG_LITERAL, 'L', 'l');
+            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
+        }});
+        transition.put(State.LONG_LITERAL, new DefaultMap(State.START) {{
+            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
         }});
         transition.put(State.IDENTIFIER, new DefaultMap(State.START) {{
             putRange(State.IDENTIFIER, 'a', 'z');
             putRange(State.IDENTIFIER, 'A', 'Z');
             putRange(State.IDENTIFIER, '0', '9');
             putAll(State.IDENTIFIER, '_'); // overwrites previous write
+            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
         }});
         transition.put(State.SINGLE_LINE_COMMENT, new DefaultMap(State.SINGLE_LINE_COMMENT) {{
             putAll(State.START, '\n', EOF);
@@ -283,6 +303,9 @@ public class Scan {
             putAll(State.START, '\'');
             putAll(State.ERROR, EOF);
         }});
+        transition.put(State.WHITESPACE, new DefaultMap(State.START) {{
+            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
+        }});
         transition.put(State.END, new DefaultMap(State.END));
     }
 
@@ -311,36 +334,36 @@ public class Scan {
     private State currentState = State.START;
     private int lineNumber = 1;
 
-    private String getCurrentSubstring() {
-        return in.substring(start, end);
-    }
-
-
     private boolean canGobble() {
-        return end <= in.length();
+        return end < in.length();
     }
 
     private void gobble() {
         assert canGobble();
+        System.out.println(currentState);
         Character c;
-        if (end++ == in.length()) { // invariant: this is the only place end is incremented
+        if (++end == in.length()) { // invariant: this is the only place end is incremented
             c = EOF;
         } else {
+            assert end < in.length();
             c = in.charAt(end);
+            if (c == '\n') lineNumber++;
         }
 
-        if (c == '\n') lineNumber++;
-
         State nextState = transition.get(currentState).get(c);
-        if (nextState == State.START) {
-            String token = getCurrentSubstring();
-            TokenType tokenType;
-            try {
-                tokenType = currentState.toTokenType(token);
-                tokens.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add(new StateString(token, tokenType));
-            } catch (IllegalSyntaxException e) {
-                String errorMsg = e.getMessage();
-                errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add(errorMsg);
+        if (nextState == State.START || nextState == State.WHITESPACE) {
+            if (currentState != State.WHITESPACE) {
+                String token = in.substring(start, end);
+                System.out.println("Token: " + token);
+                TokenType tokenType;
+                try {
+                    tokenType = currentState.toTokenType(token);
+                    tokens.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add(new StateString(token, tokenType));
+                } catch (IllegalSyntaxException e) {
+                    String errorMsg = e.getMessage();
+                    System.out.println("Error: " + errorMsg);
+                    errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add(errorMsg);
+                }
             }
             start = end;
         } 
@@ -349,8 +372,8 @@ public class Scan {
         else if (nextState == State.ERROR) {
             String errorMsg = "Unexpected character: '" + c + "'";
             errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add(errorMsg);
-        } 
-
+        }
+        
         currentState = nextState;
     }
 
@@ -368,7 +391,9 @@ public class Scan {
         StringBuilder sb = new StringBuilder();
         for (int line : tokens.keySet()) {
             for (StateString token : tokens.get(line)) {
-                sb.append(Integer.valueOf(line).toString() + " ").append(token.toString()).append("\n");
+                if (token.tokenType != TokenType.IGNORE) {
+                    sb.append(Integer.valueOf(line).toString()).append(" ").append(token.toString()).append("\n");
+                }
             }
         }
         return sb.toString();
