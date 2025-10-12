@@ -15,9 +15,9 @@ import java.util.List;
 
 public class ScanTest {
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{2}")
     @ArgumentsSource(ValidInputArgumentProvider.class)
-    public void testValidInputsMatchExpectedOutput(String inputContent, String expectedOutput) {
+    public void testValidInputsMatchExpectedOutput(String inputContent, String expectedOutput, String filename) {
         // Create a ByteArrayOutputStream to capture the output
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         PrintStream printStream = new PrintStream(outputStream);
@@ -31,9 +31,9 @@ public class ScanTest {
         assertEquals(expectedOutputTrimmed, actualOutput);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{2}")
     @ArgumentsSource(InvalidInputArgumentProvider.class)
-    public void testInvalidInputsThrowCompileError(String inputContent, String expectedOutput) {
+    public void testInvalidInputsThrowCompileError(String inputContent, String expectedOutput, String filename) {
         // Test that invalid inputs throw a compile error or produce error output
         Scan scan = new Scan(inputContent);
         

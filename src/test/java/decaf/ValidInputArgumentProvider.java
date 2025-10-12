@@ -55,7 +55,8 @@ public class ValidInputArgumentProvider implements ArgumentsProvider {
                     try {
                         String inputContent = Files.readString(inputPath, StandardCharsets.UTF_8);
                         String outputContent = Files.readString(outputPath, StandardCharsets.UTF_8);
-                        return Arguments.of(inputContent, outputContent);
+                        // Include filename as third parameter for test naming
+                        return Arguments.of(inputContent, outputContent, baseName);
                     } catch (IOException e) {
                         throw new RuntimeException("Failed to read files for: " + outputFilename, e);
                     }
