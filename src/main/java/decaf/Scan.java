@@ -163,14 +163,25 @@ public class Scan {
 
     static class DefaultMap extends HashMap<Character, State> {
         private final State defaultValue;
+        private Map<Character, Runnable> actions;
 
         public DefaultMap(State defaultValue) {
             this.defaultValue = defaultValue;
+            this.actions = new HashMap<>();
         }
 
         @Override
         public State get(Object key) {
-            return super.getOrDefault(key, defaultValue);
+            State next = super.getOrDefault(key, defaultValue);
+            if (actions.containsKey(next)) actions.get(next).run();
+            return next;
+        }
+
+        public final void putAction(Character transition, Runnable action) {
+            /*
+             * IMPORTANT: only use to add warning and error messages
+             */
+            actions.put(transition, action);
         }
 
         @SafeVarargs
@@ -185,8 +196,8 @@ public class Scan {
 
     private static final Character EOF = null; // used to represent end of file
 
-    private static final Map<State, DefaultMap> transition = new HashMap<>();
-    static {
+    private final Map<State, DefaultMap> transition = new HashMap<>();
+    {
         transition.put(State.START, new DefaultMap(State.ERROR) {{
             putAll(State.SLASH, '/');
             putAll(State.STAR, '*');
@@ -278,37 +289,60 @@ public class Scan {
         transition.put(State.MULTI_LINE_COMMENT, new DefaultMap(State.MULTI_LINE_COMMENT) {{
             putAll(State.MULTI_LINE_COMMENT_STAR, '*');
             putAll(State.MULTI_LINE_COMMENT_SLASH, '/');
-            putAll(State.ERROR, EOF); // no open comment error
+            
+            // no open comment error
+            putAll(State.ERROR, EOF);
+            putAction(EOF, () -> errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add("Unclosed multi-line comment"));
         }});
         transition.put(State.MULTI_LINE_COMMENT_SLASH, new DefaultMap(State.MULTI_LINE_COMMENT) {{
-            putAll(State.ERROR, '*'); // nested comment error
             putAll(State.MULTI_LINE_COMMENT_SLASH, '/');
-            putAll(State.ERROR, EOF); // no open comment error
+
+            // nested comment error
+            putAll(State.ERROR, '*'); 
+            putAction('*', () -> errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add("Nested multi-line comment are illegal"));
+            
+            // no open comment error
+            putAll(State.ERROR, EOF); 
+            putAction(EOF, () -> errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add("Unclosed multi-line comment"));
         }});
         transition.put(State.MULTI_LINE_COMMENT_STAR, new DefaultMap(State.MULTI_LINE_COMMENT) {{
             putAll(State.MULTI_LINE_COMMENT_END, '/');
             putAll(State.MULTI_LINE_COMMENT_STAR, '*');
-            putAll(State.ERROR, EOF); // no open comment error
+
+            // no open comment error
+            putAll(State.ERROR, EOF); 
+            putAction(EOF, () -> errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add("Unclosed multi-line comment"));
         }});
         transition.put(State.MULTI_LINE_COMMENT_END, new DefaultMap(State.START));
         transition.put(State.STRING_LITERAL, new DefaultMap(State.STRING_LITERAL) {{
             putAll(State.STRING_LITERAL_IGNORE_NEXT, '\\');
             putAll(State.STRING_LITERAL_END, '"');
+            
+            // unclosed string error
             putAll(State.ERROR, EOF);
+            putAction(EOF, () -> errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add("Unclosed string literal"));
         }});
         transition.put(State.STRING_LITERAL_IGNORE_NEXT, new DefaultMap(State.STRING_LITERAL) {{
-            putAll(State.ERROR, EOF); // no open string error
+            // unclosed string error
+            putAll(State.ERROR, EOF);
+            putAction(EOF, () -> errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add("Unclosed string literal"));
         }});
         transition.put(State.STRING_LITERAL_END, new DefaultMap(State.START));
         transition.put(State.CHAR_LITERAL, new DefaultMap(State.CHAR_LITERAL) {{
             putAll(State.START, '\'');
             putAll(State.CHAR_LITERAL_IGNORE_NEXT, '\\');
             putAll(State.CHAR_LITERAL_END, '\'');
+            
+            // unclosed char error
             putAll(State.ERROR, EOF);
+            putAction(EOF, () -> errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add("Unclosed char literal"));
         }});
         transition.put(State.CHAR_LITERAL_IGNORE_NEXT, new DefaultMap(State.CHAR_LITERAL) {{
-            putAll(State.ERROR, EOF); // no close char error
+            // unclosed char error
+            putAll(State.ERROR, EOF);
+            putAction(EOF, () -> errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add("Unclosed char literal"));
         }});
+        transition.put(State.CHAR_LITERAL_END, new DefaultMap(State.START));
         transition.put(State.AMPER, new DefaultMap(State.ERROR) {{
             putAll(State.AMPER_AMPER, '&');
         }});
@@ -317,7 +351,6 @@ public class Scan {
             putAll(State.PIPE_PIPE, '|');
         }});
         transition.put(State.PIPE_PIPE, new DefaultMap(State.START));
-        transition.put(State.CHAR_LITERAL_END, new DefaultMap(State.START));
         transition.put(State.DIV_EQ, new DefaultMap(State.START));
         transition.put(State.MUL_EQ, new DefaultMap(State.START));
         transition.put(State.ADD_EQ, new DefaultMap(State.START));
