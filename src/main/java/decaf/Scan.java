@@ -439,6 +439,26 @@ public class Scan {
         return sb.toString().strip();
     }
 
+    public String getErrors() {
+        StringBuilder sb = new StringBuilder();
+        for (int line : errors.keySet()) {
+            for (String error : errors.get(line)) {
+                sb.append("Error on line ").append(Integer.valueOf(line).toString()).append(": ").append(error).append("\n");
+            }
+        }
+        return sb.toString().strip();
+    }
+
+    public String getWarnings() {
+        StringBuilder sb = new StringBuilder();
+        for (int line : warnings.keySet()) {
+            for (String warning : warnings.get(line)) {
+                sb.append("Warning on line ").append(Integer.valueOf(line).toString()).append(": ").append(warning).append("\n");
+            }
+        }
+        return sb.toString().strip();
+    }
+
     public void write(OutputStream outputStream) throws IOException {
         String output = this.toString();
         outputStream.write(output.getBytes(StandardCharsets.UTF_8));

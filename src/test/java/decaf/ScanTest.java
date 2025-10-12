@@ -36,10 +36,10 @@ public class ScanTest {
     public void testInvalidInputsThrowCompileError(String inputContent, String expectedOutput, String filename) {
         // Test that invalid inputs throw a compile error or produce error output
         Scan scan = new Scan(inputContent);
+        scan.scan();
         
         // Assuming scan() throws an exception for invalid input, or check for error in output
-        assertThrows(Exception.class, () -> {
-            scan.scan();
-        }, "Expected compile error for invalid input");
+        System.out.println(scan.getErrors());
+        assert(scan.getErrors().length() > 0);
     }
 }
