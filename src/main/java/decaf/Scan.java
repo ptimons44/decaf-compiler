@@ -314,6 +314,14 @@ public class Scan {
             // unclosed string error
             putAll(State.ERROR, EOF);
             putAction(EOF, () -> putError("Unclosed string literal"));
+
+            // line break in string error
+            putAll(State.ERROR, '\n');
+            putAction('\n', () -> putError("Newline in string literal"));
+
+            // unescaped char error
+            putAll(State.ERROR, '\'');
+            putAction('\'', () -> putError("Unescaped single quote in string literal"));
         }});
         transition.put(State.STRING_LITERAL_IGNORE_NEXT, new DefaultMap<Character, State>(State.STRING_LITERAL) {{
             // unclosed string error
