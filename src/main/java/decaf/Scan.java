@@ -328,11 +328,19 @@ public class Scan {
             // unclosed char error
             putAll(State.ERROR, EOF);
             putAction(EOF, () -> putError("Unclosed char literal"));
+
+            // line break in char error
+            putAll(State.ERROR, '\n');
+            putAction('\n', () -> putError("Newline in char literal"));
         }});
         transition.put(State.CHAR_LITERAL_IGNORE_NEXT, new DefaultMap<Character, State>(State.CHAR_LITERAL) {{
             // unclosed char error
             putAll(State.ERROR, EOF);
             putAction(EOF, () -> putError("Unclosed char literal"));
+
+            // line break in char error
+            putAll(State.ERROR, '\n');
+            putAction('\n', () -> putError("Newline in char literal"));
         }});
         transition.put(State.AMPER, new DefaultMap<Character, State>(State.ERROR) {{
             putAll(State.AMPER_AMPER, '&');
