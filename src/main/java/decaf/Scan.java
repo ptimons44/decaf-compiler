@@ -71,6 +71,10 @@ public class Scan {
         GEQ,
         NEQ,
         EQEQ,
+        AMPER,
+        AMPER_AMPER,
+        PIPE,
+        PIPE_PIPE,
         INCR,
         DECR,
         ZERO,
@@ -203,6 +207,8 @@ public class Scan {
             putAll(State.STRING_LITERAL, '\"');
             putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
             putAll(State.PUNCTUATION, '(', ')', '[', ']', '{', '}', ';', ',');
+            putAll(State.AMPER, '&');
+            putAll(State.PIPE, '|');
             putAll(State.END, EOF);
         }});
         transition.put(State.PUNCTUATION, new DefaultMap(State.START));
@@ -304,6 +310,14 @@ public class Scan {
         transition.put(State.CHAR_LITERAL_IGNORE_NEXT, new DefaultMap(State.CHAR_LITERAL) {{
             putAll(State.ERROR, EOF); // no close char error
         }});
+        transition.put(State.AMPER, new DefaultMap(State.ERROR) {{
+            putAll(State.AMPER_AMPER, '&');
+        }});
+        transition.put(State.AMPER_AMPER, new DefaultMap(State.START));
+        transition.put(State.PIPE, new DefaultMap(State.ERROR) {{
+            putAll(State.PIPE_PIPE, '|');
+        }});
+        transition.put(State.PIPE_PIPE, new DefaultMap(State.START));
         transition.put(State.CHAR_LITERAL_END, new DefaultMap(State.START));
         transition.put(State.DIV_EQ, new DefaultMap(State.START));
         transition.put(State.MUL_EQ, new DefaultMap(State.START));
