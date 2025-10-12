@@ -332,6 +332,10 @@ public class Scan {
             // line break in char error
             putAll(State.ERROR, '\n');
             putAction('\n', () -> putError("Newline in char literal"));
+
+            // unescaped char error
+            putAll(State.ERROR, '\"');
+            putAction('\"', () -> putError("Unescaped double quote in char literal"));
         }});
         transition.put(State.CHAR_LITERAL_IGNORE_NEXT, new DefaultMap<Character, State>(State.CHAR_LITERAL) {{
             // unclosed char error
