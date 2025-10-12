@@ -88,6 +88,21 @@ public class Scan {
         END,
         ERROR;
 
+        public boolean isEndOfPreviousToken() {
+            return 
+                this == START || 
+                this == WHITESPACE || 
+                this == SLASH ||
+                this == STAR ||
+                this == MODULO ||
+                this == PLUS ||
+                this == MINUS ||
+                this == EQUAL ||
+                this == LESS_THAN ||
+                this == GREATER_THAN ||
+                this == BANG;
+        }
+
         public TokenType toTokenType(String token) throws IllegalSyntaxException  {
             switch (this) {
                 case CHAR_LITERAL:
@@ -141,7 +156,7 @@ public class Scan {
                                 throw new IllegalSyntaxException("Invalid identifier: " + token);
                             }
                     }
-                case SINGLE_LINE_COMMENT, MULTI_LINE_COMMENT, START, WHITESPACE:
+                case SINGLE_LINE_COMMENT, MULTI_LINE_COMMENT, WHITESPACE:
                     return TokenType.IGNORE;
                 default:
                     return TokenType.PUNCTUATION;
@@ -176,6 +191,27 @@ public class Scan {
     private static final Map<State, DefaultMap> transition = new HashMap<>();
     static {
         transition.put(State.START, new DefaultMap(State.ERROR) {{
+            putAll(State.SLASH, '/');
+            putAll(State.STAR, '*');
+            putAll(State.PLUS, '+');
+            putAll(State.MINUS, '-');
+            putAll(State.EQUAL, '=');
+            putAll(State.LESS_THAN, '<');
+            putAll(State.GREATER_THAN, '>');
+            putAll(State.BANG, '!');
+            putAll(State.MODULO, '%');
+            putAll(State.ZERO, '0');
+            putRange(State.DEC_LITERAL, '1', '9');
+            putRange(State.IDENTIFIER, 'a', 'z');
+            putRange(State.IDENTIFIER, 'A', 'Z');
+            putAll(State.IDENTIFIER, '_');
+            putAll(State.CHAR_LITERAL, '\'');
+            putAll(State.STRING_LITERAL, '"');
+            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
+            putAll(State.START, '(', ')', '[', ']', ';', ',');
+            putAll(State.END, EOF);
+        }});
+        transition.put(State.WHITESPACE, new DefaultMap(State.ERROR) {{ // IDENTICAL TO START
             putAll(State.SLASH, '/');
             putAll(State.STAR, '*');
             putAll(State.PLUS, '+');
@@ -303,9 +339,6 @@ public class Scan {
             putAll(State.START, '\'');
             putAll(State.ERROR, EOF);
         }});
-        transition.put(State.WHITESPACE, new DefaultMap(State.START) {{
-            putAll(State.WHITESPACE, ' ', '\t', '\r', '\n');
-        }});
         transition.put(State.END, new DefaultMap(State.END));
     }
 
@@ -351,19 +384,21 @@ public class Scan {
         }
 
         State nextState = transition.get(currentState).get(c);
-        if (nextState == State.START || nextState == State.WHITESPACE) {
-            if (currentState != State.WHITESPACE) {
-                String token = in.substring(start, end);
-                System.out.println("Token: " + token);
-                TokenType tokenType;
-                try {
-                    tokenType = currentState.toTokenType(token);
-                    tokens.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add(new StateString(token, tokenType));
-                } catch (IllegalSyntaxException e) {
-                    String errorMsg = e.getMessage();
-                    System.out.println("Error: " + errorMsg);
-                    errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add(errorMsg);
-                }
+        if (currentState == State.WHITESPACE) {
+            start = end;
+        }
+        else if (nextState.isEndOfPreviousToken()) {
+            String token = in.substring(start, end);
+            System.out.println("Token: " + token);
+            TokenType tokenType;
+            try {
+                tokenType = currentState.toTokenType(token);
+                System.out.println("Type: " + tokenType);
+                tokens.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add(new StateString(token, tokenType));
+            } catch (IllegalSyntaxException e) {
+                String errorMsg = e.getMessage();
+                System.out.println("Error: " + errorMsg);
+                errors.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add(errorMsg);
             }
             start = end;
         } 
