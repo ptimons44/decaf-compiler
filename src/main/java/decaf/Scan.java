@@ -369,31 +369,16 @@ public class Scan {
         transition.put(State.ERROR, new DefaultMap<Character, State>(State.ERROR));
     }
 
-
-    private class StateString {
-        String str;
-        TokenType tokenType;
-
-        public StateString(String str, TokenType tokenType) {
-            this.str = str;
-            this.tokenType = tokenType;
-        }
-
-        @Override
-        public String toString() {
-            return tokenType.toString() + str;
-        }
-    }
-
     private final String in;
-    private Map<Integer, List<StateString>> tokens = new TreeMap<>(); // maps line number to token and maintains order for pretty printing
+    private List<LexicalToken> tokens = new ArrayList<>(); // maps line number to token and maintains order for pretty printing
     private Map<Integer, List<String>> errors = new HashMap<>(); // maps line number to error message
     private Map<Integer, List<String>> warnings = new HashMap<>(); // maps line number to warning message
 
     private int start = 0; // inclusive
     private int end = 0; // non-inclusive
     private State currentState = State.START;
-    private int lineNumber = 1;
+    private Integer lineNumber = 1;
+    private Integer columnNumber = 1;
 
     private boolean foundError = false;
     private boolean canGobble() {
@@ -420,6 +405,7 @@ public class Scan {
         }
         else {
             end++;
+            columnNumber += 1;
             c = peek();
         }
         State nextState = transition.get(currentState).get(c);
@@ -429,7 +415,12 @@ public class Scan {
             try {
                 tokenType = currentState.toTokenType(token);
                 System.out.println("Type: " + tokenType + " Token: " + token);
-                tokens.computeIfAbsent(lineNumber, k -> new ArrayList<>()).add(new StateString(token, tokenType));
+                // Only create LexicalToken if tokenType is NOT IGNORE
+                if (tokenType != TokenType.IGNORE) {
+                    // Convert Scan.TokenType to LexicalToken.TokenType
+                    LexicalToken.TokenType lexicalTokenType = convertToLexicalTokenType(tokenType);
+                    tokens.add(new LexicalToken(lexicalTokenType, token, lineNumber, columnNumber));
+                }
             } catch (IllegalSyntaxException e) {
                 String errorMsg = e.getMessage();
                 System.out.println("Error: " + errorMsg);
@@ -444,7 +435,33 @@ public class Scan {
         }
         
         currentState = nextState;
-        if (c != null && c == '\n') lineNumber++;
+        if (c != null && c == '\n') {
+            lineNumber++;
+            columnNumber = 1;
+        }
+    }
+
+    private LexicalToken.TokenType convertToLexicalTokenType(TokenType scanTokenType) {
+        switch (scanTokenType) {
+            case CHARLITERAL:
+                return LexicalToken.TokenType.CHARLITERAL;
+            case STRINGLITERAL:
+                return LexicalToken.TokenType.STRINGLITERAL;
+            case INTLITERAL:
+                return LexicalToken.TokenType.INTLITERAL;
+            case LONGLITERAL:
+                return LexicalToken.TokenType.LONGLITERAL;
+            case BOOLEANLITERAL:
+                return LexicalToken.TokenType.BOOLEANLITERAL;
+            case IDENTIFIER:
+                return LexicalToken.TokenType.IDENTIFIER;
+            case PUNCTUATION:
+                return LexicalToken.TokenType.PUNCTUATION;
+            case KEYWORD:
+                return LexicalToken.TokenType.KEYWORD;
+            default:
+                throw new IllegalArgumentException("Cannot convert IGNORE token type to LexicalToken.TokenType");
+        }
     }
 
     public Scan(String in) {
@@ -459,12 +476,12 @@ public class Scan {
 
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        for (int line : tokens.keySet()) {
-            for (StateString token : tokens.get(line)) {
-                if (token.tokenType != TokenType.IGNORE) {
-                    sb.append(Integer.valueOf(line).toString()).append(" ").append(token.toString()).append("\n");
-                }
+        for (LexicalToken token : tokens) {
+            sb.append(Integer.valueOf(token.getLineNumber()).toString()).append(" ");
+            if (token.getTokenType() != LexicalToken.TokenType.KEYWORD && token.getTokenType() != LexicalToken.TokenType.PUNCTUATION) {
+                sb.append(token.getTokenType().toString()).append(" ");
             }
+            sb.append(token.getVal()).append("\n");
         }
         return sb.toString().strip();
     }
