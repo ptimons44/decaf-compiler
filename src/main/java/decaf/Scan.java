@@ -15,6 +15,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
 
+import lombok.Getter;
+
 public class Scan {
     static class IllegalSyntaxException extends Exception {
         public IllegalSyntaxException(String message) {
@@ -370,6 +372,7 @@ public class Scan {
     }
 
     private final String in;
+    @Getter
     private List<LexicalToken> tokens = new ArrayList<>(); // maps line number to token and maintains order for pretty printing
     private Map<Integer, List<String>> errors = new HashMap<>(); // maps line number to error message
     private Map<Integer, List<String>> warnings = new HashMap<>(); // maps line number to warning message

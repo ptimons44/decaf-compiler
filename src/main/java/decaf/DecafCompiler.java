@@ -25,10 +25,11 @@ public class DecafCompiler {
             }
 
             Parse parse = new Parse(scan);
-            parse.parse();
+            Boolean isValidProgram = parse.getIsValidProgram();
             if (CommandLineInterface.target == CompilerAction.PARSE) {
-                parse.printErrors();
-                parse.printWarnings();
+                // parse.printErrors();
+                // parse.printWarnings();
+                System.out.println(isValidProgram ? "OK" : "ERR");
                 return;
             }
 
