@@ -1,4 +1,4 @@
-package decaf;
+package decaf.types;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -6,7 +6,7 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class LexicalToken {
-    enum TokenType {
+    public enum TokenType {
         CHARLITERAL, 
         STRINGLITERAL, 
         INTLITERAL,

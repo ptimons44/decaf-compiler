@@ -24,7 +24,7 @@ public class DecafCompiler {
                 return;
             }
 
-            Parse parse = new Parse(scan);
+            Parse parse = new Parse(scan.getTokens());
             Boolean isValidProgram = parse.getIsValidProgram();
             if (CommandLineInterface.target == CompilerAction.PARSE) {
                 // parse.printErrors();

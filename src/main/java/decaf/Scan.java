@@ -1,5 +1,7 @@
 package decaf;
 
+import decaf.types.LexicalToken;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
