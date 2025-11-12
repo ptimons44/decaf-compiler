@@ -21,28 +21,45 @@ public class Parse {
     }
 
     private SyntacticEnv getSyntacticEnv(LexicalToken token) {
-        switch (token.getTokenType()) {
-            case KEYWORD:
-                String val = token.getVal();
-                if (val.equals("class") || val.equals("void") || val.equals("int") || val.equals("boolean") || val.equals("char") || val.equals("long") || val.equals("if") || val.equals("while") || val.equals("return")) {
-                    return SyntacticEnv.DECL;
-                } else {
-                    return SyntacticEnv.STMT;
-                }
-            case IDENTIFIER:
-            case INTLITERAL:
-            case STRINGLITERAL:
-            case CHARLITERAL:
-            case BOOLEANLITERAL:
-            case LONGLITERAL:
-                return SyntacticEnv.EXPR;
-            case PUNCTUATION:
-                return SyntacticEnv.STMT;
-            default:
-                return null;
+        LexicalToken.TokenType tokenType = token.getTokenType();
+        String tokenValue = token.getVal();
+
+        // Declarations: start with type keywords (int, long, bool) or void
+        if (LexicalToken.TokenType.KEYWORD.equals(tokenType) &&
+            ("int".equals(tokenValue) || "long".equals(tokenValue) ||
+             "bool".equals(tokenValue) || "void".equals(tokenValue))) {
+            return SyntacticEnv.DECL;
         }
+
+        // Statements: start with statement keywords
+        if (LexicalToken.TokenType.KEYWORD.equals(tokenType) &&
+            ("if".equals(tokenValue) || "while".equals(tokenValue) ||
+             "for".equals(tokenValue) || "return".equals(tokenValue) ||
+             "break".equals(tokenValue) || "continue".equals(tokenValue))) {
+            return SyntacticEnv.STMT;
+        }
+
+        // Statements: identifiers can start statements (assignments, method calls)
+        if (LexicalToken.TokenType.IDENTIFIER.equals(tokenType)) {
+            return SyntacticEnv.STMT;
+        }
+
+        // Block statements
+        if (LexicalToken.TokenType.PUNCTUATION.equals(tokenType) && "{".equals(tokenValue)) {
+            return SyntacticEnv.STMT;
+        }
+
+        // Expressions: literals or opening parenthesis
+        if (LexicalToken.TokenType.INTLITERAL.equals(tokenType) ||
+            LexicalToken.TokenType.STRINGLITERAL.equals(tokenType) ||
+            LexicalToken.TokenType.BOOLEANLITERAL.equals(tokenType) ||
+            (LexicalToken.TokenType.PUNCTUATION.equals(tokenType) && "(".equals(tokenValue))) {
+            return SyntacticEnv.EXPR;
+        }
+
+        return SyntacticEnv.ERROR;
     }
-    
+
     public Parse(List<LexicalToken> tokens) {
         /*
          * Uses LL(1) parsing to parse the token stream for non-Expression grammar rules.

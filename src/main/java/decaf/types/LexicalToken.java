@@ -3,6 +3,7 @@ package decaf.types;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.ToString;
+import lombok.Getter;
 
 @Data
 @AllArgsConstructor
@@ -18,8 +19,8 @@ public class LexicalToken {
         PUNCTUATION, 
         KEYWORD
     };
-    private TokenType tokenType;
-    private String val;
+    @Getter private TokenType tokenType;
+    @Getter private String val;
     private Integer lineNumber;
     private Integer columnNumber;
 }
