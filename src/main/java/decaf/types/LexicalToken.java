@@ -2,9 +2,11 @@ package decaf.types;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.ToString;
 
 @Data
 @AllArgsConstructor
+@ToString
 public class LexicalToken {
     public enum TokenType {
         CHARLITERAL, 
