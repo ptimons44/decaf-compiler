@@ -1,10 +1,13 @@
 package decaf;
 
 import decaf.types.LexicalToken;
+import decaf.types.AST;
+import decaf.types.CFGNode;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.ArrayList;
 
@@ -12,6 +15,7 @@ public class Parse {
     private List<LexicalToken> tokens;
     private String error = null;
     private List<String> warnings = new ArrayList<>();
+    private AST ast = null;
 
     private enum SyntacticEnv {
         DECL,
@@ -68,31 +72,106 @@ public class Parse {
         this.tokens = tokens;
 
         LexicalToken lookahead = null;
-        int pos = 0;
+        Integer pos = 0; // spawned methods can modify
+        boolean isValid = true;
         while (pos < tokens.size()) {
             lookahead = tokens.get(pos);
             SyntacticEnv syntacticEnv = getSyntacticEnv(lookahead);
             if (syntacticEnv == SyntacticEnv.DECL) {
-                parseDecl(pos);
+                isValid &= parseDecl(pos);
             } else if (syntacticEnv == SyntacticEnv.STMT) {
-                parseStmt(pos);
+                isValid &= parseStmt(pos);
             } else if (syntacticEnv == SyntacticEnv.EXPR) {
-                parseExpr(pos, 0);
+                isValid &= parseExpr(pos, 0);
             } else {
                 this.error = "Unknown syntactic environment for token: " + lookahead.toString();
                 return;
             }
-
+            // TODO: remove
+            break;
         }
     }
 
-    private void parseDecl(int pos) {
+    // Terminal CFGNode instances
+    private static final CFGNode SEMICOLON_T = new CFGNode("SEMICOLON_T");
+
+    // Non-Terminal CFGNode instances with LL1 transition maps
+    private static final CFGNode DECL = new CFGNode("DECL", Map.of(
+        new CFGNode.LL1(LexicalToken.TokenType.KEYWORD, "import"), "IMPORT_DECL",
+        new CFGNode.LL1(LexicalToken.TokenType.KEYWORD, "int"), "VAR_DECL",
+        new CFGNode.LL1(LexicalToken.TokenType.KEYWORD, "long"), "VAR_DECL",
+        new CFGNode.LL1(LexicalToken.TokenType.KEYWORD, "bool"), "VAR_DECL"
+    ));
+
+    private static final CFGNode IMPORT_DECL = new CFGNode("IMPORT_DECL", Map.of(
+        new CFGNode.LL1(LexicalToken.TokenType.KEYWORD, "import"), "IMPORT_SUF"
+    ));
+
+    private static final CFGNode IMPORT_SUF = new CFGNode("IMPORT_SUF", Map.of(
+        new CFGNode.LL1(LexicalToken.TokenType.IDENTIFIER, null), "IMPORT_SUF2" 
+    ));
+
+    private static final CFGNode IMPORT_SUF2 = new CFGNode("IMPORT_SUF", Map.of(
+        new CFGNode.LL1(LexicalToken.TokenType.PUNCTUATION, ";"), "SEMICOLON_T"
+    ));
+
+    private static final CFGNode VAR_DECL = new CFGNode("VAR_DECL", Map.of(
+        new CFGNode.LL1(LexicalToken.TokenType.KEYWORD, "int"), "DECL_OR_ASMT",
+        new CFGNode.LL1(LexicalToken.TokenType.KEYWORD, "long"), "DECL_OR_ASMT",
+        new CFGNode.LL1(LexicalToken.TokenType.KEYWORD, "bool"), "DECL_OR_ASMT"
+    ));
+
+    private static final CFGNode DECL_OR_ASMT = new CFGNode("DECL_OR_ASMT", Map.of(
+        new CFGNode.LL1(LexicalToken.TokenType.IDENTIFIER, null), "DECL_OR_ASMT_SUF"
+    ));
+
+    private static final CFGNode DECL_OR_ASMT_SUF = new CFGNode("DECL_OR_ASMT_SUF", Map.of(
+        new CFGNode.LL1(LexicalToken.TokenType.PUNCTUATION, "="), "ASMT",
+        new CFGNode.LL1(LexicalToken.TokenType.PUNCTUATION, ";"), "SEMICOLON_T"
+    ));
+
+    private static final CFGNode ASMT = new CFGNode("ASMT", Map.of(
+        new CFGNode.LL1(LexicalToken.TokenType.INTLITERAL, null), "ASMT_SUF",
+        new CFGNode.LL1(LexicalToken.TokenType.LONGLITERAL, null), "ASMT_SUF",
+        new CFGNode.LL1(LexicalToken.TokenType.STRINGLITERAL, null), "ASMT_SUF",
+        new CFGNode.LL1(LexicalToken.TokenType.BOOLEANLITERAL, null), "ASMT_SUF"
+    ));
+
+    private static final CFGNode ASMT_SUF = new CFGNode("ASMT_SUF", Map.of(
+        new CFGNode.LL1(LexicalToken.TokenType.PUNCTUATION, ";"), "SEMICOLON_T"
+    ));
+
+    private boolean parseDecl(Integer pos) {
+        CFGNode curNode = DECL;
+        CFGNode.LL1 ll1;
+        while (pos < tokens.size()) {
+            ll1 = new CFGNode.LL1(tokens.get(pos).getTokenType(), tokens.get(pos).getVal());
+            CFGNode nextNode = curNode.matchLL1(ll1);
+            curNode = nextNode;
+            pos++;
+
+            if (nextNode == null) {
+                this.error = "Unable to match lookahead token " + ll1.toString() +
+                             " in declaration parsing at token position " + pos;
+                return false;
+            }
+            else if (nextNode.isTerminal()) {
+                return true;
+            }
+        }
+        return false;
     }
 
-    private void parseStmt(int pos) {
+    private boolean parseStmt(int pos) {
+        return true;
     }
 
-    private void parseExpr(int pos, int precedence) {
+    private boolean parseExpr(int pos) {
+        return true;
+    }
+
+    private boolean parseExpr(int pos, int precedence) {
+        return true;
     }
 
     public boolean getIsValidProgram() {
