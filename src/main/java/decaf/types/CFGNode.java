@@ -14,15 +14,18 @@ public class CFGNode {
     private Map<LL1, String> transitions;
 
     public CFGNode(String name) {
+        assert name.endsWith("_T");
         this.name = name;
         this.nodeMap.put(name, this);
         this.isTerminal = true;
     }
 
     public CFGNode(String name, Map<LL1, String> transitions) {
-        this(name);
+        assert !(name.endsWith("_T"));
+        this.name = name;
+        this.nodeMap.put(name, this);
         this.transitions = transitions;
-        this.isTerminal = true;
+        this.isTerminal = false;
     }
 
     public CFGNode matchLL1(LL1 ll1) {
