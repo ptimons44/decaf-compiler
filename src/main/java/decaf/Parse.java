@@ -1,7 +1,9 @@
 package decaf;
 
 import decaf.types.LexicalToken;
-import decaf.types.AST;
+import lombok.AllArgsConstructor;
+import decaf.types.ASTBase;
+import decaf.types.ASTExpr;
 import decaf.types.CFGNode;
 
 import java.util.List;
@@ -13,15 +15,22 @@ import java.util.ArrayList;
 
 public class Parse {
     private List<LexicalToken> tokens;
+    private int pos = 0;
     private String error = null;
     private List<String> warnings = new ArrayList<>();
-    private AST ast = null;
+    private ASTBase ast = null;
 
     private enum SyntacticEnv {
         DECL,
         STMT,
         EXPR,
         ERROR
+    }
+
+    @AllArgsConstructor
+    public static class ParseResult {
+        ASTBase tree;
+        int nextPos;
     }
 
     private SyntacticEnv getSyntacticEnv(LexicalToken token) {
@@ -70,6 +79,8 @@ public class Parse {
          * Uses Pratt parsing to parse Expression grammar rules.
          */
         this.tokens = tokens;
+        this.tokens.add(new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "EOF", -1, -1)); // EOF token
+        this.ast = new ASTBase();
 
         LexicalToken lookahead = null;
         Integer pos = 0; // spawned methods can modify
@@ -78,11 +89,12 @@ public class Parse {
             lookahead = tokens.get(pos);
             SyntacticEnv syntacticEnv = getSyntacticEnv(lookahead);
             if (syntacticEnv == SyntacticEnv.DECL) {
-                isValid &= parseDecl(pos);
+                isValid &= parseDecl(pos, this.ast);
             } else if (syntacticEnv == SyntacticEnv.STMT) {
-                isValid &= parseStmt(pos);
+                isValid &= parseStmt(pos, this.ast);
             } else if (syntacticEnv == SyntacticEnv.EXPR) {
-                isValid &= parseExpr(pos, 0);
+                continue; // TODO: implement expression parsing
+                // isValid &= parseExpr(pos, 0);
             } else {
                 this.error = "Unknown syntactic environment for token: " + lookahead.toString();
                 return;
@@ -92,10 +104,13 @@ public class Parse {
         }
     }
 
-    // Terminal CFGNode instances
+    /*
+     * 
+     * Decl CFGNodes
+     * 
+     */
     private static final CFGNode SEMICOLON_T = new CFGNode("SEMICOLON_T");
 
-    // Non-Terminal CFGNode instances with LL1 transition maps
     private static final CFGNode DECL = new CFGNode("DECL", Map.of(
         new CFGNode.LL1(LexicalToken.TokenType.KEYWORD, "import"), "IMPORT_DECL",
         new CFGNode.LL1(LexicalToken.TokenType.KEYWORD, "int"), "VAR_DECL",
@@ -141,7 +156,13 @@ public class Parse {
         new CFGNode.LL1(LexicalToken.TokenType.PUNCTUATION, ";"), "SEMICOLON_T"
     ));
 
-    private boolean parseDecl(Integer pos) {
+    /*
+     * 
+     * Stmt CFGNodes
+     * 
+     */
+
+    private boolean parseDeclOrStmt(Integer pos) {
         CFGNode curNode = DECL;
         CFGNode.LL1 ll1;
         while (pos < tokens.size()) {
@@ -162,16 +183,50 @@ public class Parse {
         return false;
     }
 
-    private boolean parseStmt(int pos) {
-        return true;
+    private LexicalToken gobble() throws IndexOutOfBoundsException {
+        /*
+         * Advances the token position by one.
+         * Returns the current token before advancing.
+         */
+        if (this.pos < this.tokens.size() - 1) {
+            LexicalToken currentToken = this.tokens.get(this.pos);
+            this.pos++;
+            return currentToken;
+        } else {
+            throw new IndexOutOfBoundsException("No more tokens");
+        }
+    }
+    private LexicalToken lookahead() throws IndexOutOfBoundsException {
+        /*
+         * Precondition: to be called after gobble
+         */
+        if (this.pos < this.tokens.size()) {
+            return this.tokens.get(this.pos);
+        } else {
+            throw new IndexOutOfBoundsException("No more tokens");
+        }
     }
 
-    private boolean parseExpr(int pos) {
-        return true;
+    private boolean parseDecl(Integer pos, ASTBase parent) {
+        return parseDeclOrStmt(pos);
     }
 
-    private boolean parseExpr(int pos, int precedence) {
-        return true;
+    private boolean parseStmt(Integer pos, ASTBase parent) {
+        return parseDeclOrStmt(pos);
+    }
+
+    public ParseResult parseExpr(int startPos, int precedence) throws IndexOutOfBoundsException {
+        /*
+         * Pre-conditions
+         *   - startPos is a valid start to an expression
+         * 
+         * Uses Pratt-style parsing to parse all subexpressions >= precedence.
+         * 
+         * Post-conditions
+         *   - [startPos, nextPos) forms a valid stand-alone expression
+         * 
+         */
+        return null; // TODO: implement
     }
 
     public boolean getIsValidProgram() {

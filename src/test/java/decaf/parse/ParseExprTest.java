@@ -6,6 +6,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import decaf.Parse;
+import decaf.Parse.ParseResult;
+import decaf.types.ASTBase;
+import decaf.types.ASTExpr;
 import decaf.types.LexicalToken;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -14,6 +17,42 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public class ParseExprTest {
+
+    /*
+     * Unit tests
+     */
+    
+    @Test
+    public void testAdditionWithSubtraction() {
+        List<LexicalToken> tokens = List.of(
+            new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "a", 0, 0),
+            new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "-", 0, 0),
+            new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "b", 0, 0),  
+            new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "+", 0, 0),
+            new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "c", 0, 0),      
+            new LexicalToken(LexicalToken.TokenType.PUNCTUATION, ";", 0, 0)
+        );
+
+        Parse parser = new Parse(tokens);
+        ParseResult result = parser.parseExpr(0, 0);
+        
+        // Using the builder pattern for cleaner, more readable test construction
+        ASTExpr expectedAST = ASTExpr.add()
+            .left(ASTExpr.subtract()
+                .left("a")
+                .right("b")
+                .build())
+            .right("c")
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, 5);
+        
+        // Your test assertions here...
+        assertTrue(expectedResult.equals(result), "Parsed AST does not match expected AST.");
+    }
+
+    /*
+     * Functional Tests
+     */
 
     @ParameterizedTest
     @MethodSource("happyPathProvider")

@@ -17,7 +17,7 @@ public class ParseDeclTest {
 
     @ParameterizedTest
     @MethodSource("happyPathProvider")
-    public void testValidDeclaration(List<LexicalToken> tokens) {
+    public void testFunctionalValidDeclaration(List<LexicalToken> tokens) {
         // Test valid variable declaration using token list
         assertNotNull(tokens);
         // Add your parsing logic here
@@ -28,7 +28,7 @@ public class ParseDeclTest {
 
     @ParameterizedTest
     @MethodSource("sadPathProvider")
-    public void testInvalidDeclaration(List<LexicalToken> tokens) {
+    public void testFunctionalInvalidDeclaration(List<LexicalToken> tokens) {
         // Test invalid variable declaration using token list
         assertNotNull(tokens);
         // Add your parsing logic that should fail
