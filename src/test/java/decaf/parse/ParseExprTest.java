@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 public class ParseExprTest extends ParseBaseTest {
 
     /*
-     * Unit tests
+     * 1. Structural AST-shape tests (exact tree assertions)
      */
     
     @Test
@@ -104,7 +104,7 @@ public class ParseExprTest extends ParseBaseTest {
     }
 
     /*
-     * Functional Tests
+     * 2. Validity / acceptance tests (should parse)
      */
 
     @ParameterizedTest
@@ -117,6 +117,9 @@ public class ParseExprTest extends ParseBaseTest {
         assertTrue(isValidProgram, "Expected valid expression to be parsed successfully.");
     }
 
+    /*
+     * 3. Invalidity / rejection tests (should fail)
+     */
     @ParameterizedTest
     @MethodSource("sadPathProvider")
     public void testInvalidExpression(List<LexicalToken> tokens) {
