@@ -70,7 +70,7 @@ public class ParseExprTest {
         );
 
         Parse parser = new Parse(tokens);
-        ParseResult result = parser.parseExpr(0, 5);
+        ParseResult result = parser.parseExpr(0, 6);
         
         // Using the builder pattern for cleaner, more readable test construction
         ASTExpr expectedAST = ASTExpr.multiply()
@@ -80,7 +80,7 @@ public class ParseExprTest {
                 .build())
             .right("c")
             .build();
-        ParseResult expectedResult = new ParseResult(expectedAST, 6);
+        ParseResult expectedResult = new ParseResult(expectedAST, 5);
         
         // Only print debug information on failure
         if (!expectedResult.equals(result)) {
