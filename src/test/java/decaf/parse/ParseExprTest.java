@@ -53,11 +53,15 @@ public class ParseExprTest extends ParseBaseTest {
                 AST mismatch:
                 Expected:
                 %s
+                Expected nextPos: %d
                 Actual:
                 %s
+                Actual nextPos: %d
                 """.formatted(
                     expectedAST.prettyPrint(),
-                    result.tree.prettyPrint()
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
                 )
         );
 
@@ -94,11 +98,15 @@ public class ParseExprTest extends ParseBaseTest {
                 AST mismatch:
                 Expected:
                 %s
+                Expected nextPos: %d
                 Actual:
                 %s
+                Actual nextPos: %d
                 """.formatted(
                     expectedAST.prettyPrint(),
-                    result.tree.prettyPrint()
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
                 )
         );
     }
@@ -115,7 +123,7 @@ public class ParseExprTest extends ParseBaseTest {
         );
 
         Parse parser = new Parse(tokens);
-        ParseResult result = parser.parseExpr(0, 6);
+        ParseResult result = parser.parseExpr(0, 5);
 
         // Using the builder pattern for cleaner, more readable test construction
         ASTExpr expectedAST = ASTExpr.add()
@@ -131,12 +139,67 @@ public class ParseExprTest extends ParseBaseTest {
             expectedResult,
             result,
             () -> """
+
+                Expected nextPos: %d
+                Actual nextPos: %d
+
                 AST mismatch:
                 Expected:
                 %s
                 Actual:
                 %s
+                
                 """.formatted(
+                    expectedResult.nextPos,
+                    result.nextPos,
+                    expectedAST.prettyPrint(),
+                    result.tree.prettyPrint()
+                )
+        );
+    }
+
+    @Test
+    public void testMultiplicationThenAddition() {
+        List<LexicalToken> tokens = List.of(
+            id("a"),
+            op("*"),
+            id("b"),
+            op("+"),
+            id("c"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens);
+        ParseResult result = parser.parseExpr(0, 6);
+
+        // Using the builder pattern for cleaner, more readable test construction
+        ASTExpr expectedAST = ASTExpr.add()
+            .left(ASTExpr.multiply()
+                .left("a")
+                .right("b")
+                .build())
+            .right("c")
+            .build();
+
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+            
+                Expected nextPos: %d
+                Actual nextPos: %d
+
+                AST mismatch:
+                Expected:
+                %s
+                Actual:
+                %s
+                
+                """.formatted(
+                    expectedResult.nextPos,
+                    result.nextPos,
                     expectedAST.prettyPrint(),
                     result.tree.prettyPrint()
                 )

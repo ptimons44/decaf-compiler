@@ -34,6 +34,18 @@ public class ASTBase {
     public ASTBase getChildAt(int index) {
         return this.children.get(index);
     }
+
+    public void setChild(int index, ASTBase child) {
+        assert index >= 0 && index < this.children.size() : "Index out of bounds when setting child";
+        this.children.set(index, child);
+    }
+
+    public void setRightChild(ASTBase child) {
+        if (this.getNumChildren() == 0) {
+            throw new IllegalStateException("Cannot set right child when there are no children");
+        }
+        this.setChild(this.getNumChildren() - 1, child);
+    } 
     
     public void addChild(ASTBase child) {
         this.children.add(child);

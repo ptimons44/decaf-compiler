@@ -319,11 +319,12 @@ public class Parse {
             LexicalToken op = this.tokens.get(pos);
             PrecedenceInfo precInfo = new PrecedenceInfo(op);
             if (precInfo.precedence > precedence) {
-                // creates deeper tree in right subtree
-                ParseResult rightResult = parseExpr(pos+1, precInfo.precedence);
+                // creates new subtree
+                // places in right child of current root (overwriting previous right child)
+                ParseResult rightResult = parseExpr(pos-1, precInfo.precedence);
                 if (rightResult == null) return null;
-                root = ASTExpr.binaryInfix(op).left(root).right(rightResult.tree).build();
-                pos = rightResult.nextPos;
+                root.setRightChild(rightResult.tree);
+                pos = rightResult.nextPos - 1;
             } else {
                 // tree is left-deep
                 ASTBase rightNode = new ASTBase(this.tokens.get(++pos)); // TODO: initialize with proper prefix unary expr
