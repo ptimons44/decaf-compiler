@@ -103,6 +103,46 @@ public class ParseExprTest extends ParseBaseTest {
         );
     }
 
+    @Test
+    public void testAdditionWithMultiplication() {
+        List<LexicalToken> tokens = List.of(
+            id("a"),
+            op("+"),
+            id("b"),
+            op("*"),
+            id("c"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens);
+        ParseResult result = parser.parseExpr(0, 6);
+
+        // Using the builder pattern for cleaner, more readable test construction
+        ASTExpr expectedAST = ASTExpr.add()
+            .left("a")
+            .right(ASTExpr.multiply()
+                .left("b")
+                .right("c")
+                .build())
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Actual:
+                %s
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    result.tree.prettyPrint()
+                )
+        );
+    }
+
     /*
      * 2. Validity / acceptance tests (should parse)
      */
