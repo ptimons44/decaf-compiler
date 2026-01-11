@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.util.List;
 import java.util.stream.Stream;
 
-public class ParseDeclTest {
+public class ParseDeclTest extends ParseBaseTest {
 
     @ParameterizedTest
     @MethodSource("happyPathProvider")
@@ -37,9 +37,9 @@ public class ParseDeclTest {
     static Stream<List<LexicalToken>> happyPathProvider() {
         return Stream.of(
             List.of(
-                new LexicalToken(LexicalToken.TokenType.KEYWORD, "int", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "a", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, ";", 0, 0)
+                keyword("int"),
+                id("a"),
+                punct(";")
             )
         );
     }
@@ -48,12 +48,12 @@ public class ParseDeclTest {
         return Stream.of(
             // missing identifier
             List.of(
-                new LexicalToken(LexicalToken.TokenType.KEYWORD, "int", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, ";", 0, 0)
+                keyword("int"),
+                punct(";")
             ),
             // just an identifier without type
             List.of(
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "a", 0, 0)
+                id("a")
             )
         );
     }

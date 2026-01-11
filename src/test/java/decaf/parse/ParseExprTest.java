@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.util.List;
 import java.util.stream.Stream;
 
-public class ParseExprTest {
+public class ParseExprTest extends ParseBaseTest {
 
     /*
      * Unit tests
@@ -25,12 +25,12 @@ public class ParseExprTest {
     @Test
     public void testAdditionWithSubtraction() {
         List<LexicalToken> tokens = List.of(
-            new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "a", 0, 0),
-            new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "-", 0, 0),
-            new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "b", 0, 0),  
-            new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "+", 0, 0),
-            new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "c", 0, 0),      
-            new LexicalToken(LexicalToken.TokenType.PUNCTUATION, ";", 0, 0)
+            id("a"),
+            op("-"),
+            id("b"),
+            op("+"),
+            id("c"),
+            punct(";")
         );
 
         Parse parser = new Parse(tokens);
@@ -44,29 +44,34 @@ public class ParseExprTest {
                 .build())
             .right("c")
             .build();
-        ParseResult expectedResult = new ParseResult(expectedAST, 5);
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
 
-        // Only print debug information on failure
-        if (!expectedResult.equals(result)) {
-            System.out.println("Expected AST: " + expectedAST.prettyPrint());
-            System.out.println("Parsed AST: " + result.tree.prettyPrint());
-            System.out.println("Expected next index: " + expectedResult.nextPos);
-            System.out.println("Parsed next index: " + result.nextPos);
-        }
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Actual:
+                %s
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    result.tree.prettyPrint()
+                )
+        );
 
-        // Your test assertions here...
-        assertTrue(expectedResult.equals(result), "Parsed AST does not match expected AST.");
     }
 
     @Test
     public void testMultiplicationWithDivision() {
         List<LexicalToken> tokens = List.of(
-            new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "a", 0, 0),
-            new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "/", 0, 0),
-            new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "b", 0, 0),  
-            new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "*", 0, 0),
-            new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "c", 0, 0),      
-            new LexicalToken(LexicalToken.TokenType.PUNCTUATION, ";", 0, 0)
+            id("a"),
+            op("/"),
+            id("b"),
+            op("*"),
+            id("c"),
+            punct(";")
         );
 
         Parse parser = new Parse(tokens);
@@ -80,18 +85,22 @@ public class ParseExprTest {
                 .build())
             .right("c")
             .build();
-        ParseResult expectedResult = new ParseResult(expectedAST, 5);
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
         
-        // Only print debug information on failure
-        if (!expectedResult.equals(result)) {
-            System.out.println("Expected AST: " + expectedAST.prettyPrint());
-            System.out.println("Parsed AST: " + result.tree.prettyPrint());
-            System.out.println("Expected next index: " + expectedResult.nextPos);
-            System.out.println("Parsed next index: " + result.nextPos);
-        }
-
-        // Your test assertions here...
-        assertTrue(expectedResult.equals(result), "Parsed AST does not match expected AST.");
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Actual:
+                %s
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    result.tree.prettyPrint()
+                )
+        );
     }
 
     /*
@@ -122,183 +131,183 @@ public class ParseExprTest {
         return Stream.of(
             // Simple identifier
             List.of(
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "x", 0, 0)
+                id("x")
             ),
             // Integer literal
             List.of(
-                new LexicalToken(LexicalToken.TokenType.INTLITERAL, "42", 0, 0)
+                intLit("42")
             ),
             // Boolean literal
             List.of(
-                new LexicalToken(LexicalToken.TokenType.KEYWORD, "true", 0, 0)
+                boolLit("true")
             ),
             // Binary arithmetic: x + 5
             List.of(
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "x", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "+", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.INTLITERAL, "5", 0, 0)
+                id("x"),
+                op("+"),
+                intLit("5")
             ),
             // Binary comparison: a < b
             List.of(
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "a", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "<", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "b", 0, 0)
+                id("a"),
+                op("<"),
+                id("b")
             ),
             // Operator precedence: a + b * c (should parse as a + (b * c))
             List.of(
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "a", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "+", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "b", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "*", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "c", 0, 0)
+                id("a"),
+                op("+"),
+                id("b"),
+                op("*"),
+                id("c")
             ),
             // Operator precedence: a * b + c (should parse as (a * b) + c)
             List.of(
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "a", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "*", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "b", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "+", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "c", 0, 0)
+                id("a"),
+                op("*"),
+                id("b"),
+                op("+"),
+                id("c")
             ),
             // Division precedence: a / b + c (should parse as (a / b) + c)
             List.of(
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "a", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "/", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "b", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "+", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "c", 0, 0)
+                id("a"),
+                op("/"),
+                id("b"),
+                op("+"),
+                id("c")
             ),
             // Subtraction precedence: a - b * c (should parse as a - (b * c))
             List.of(
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "a", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "-", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "b", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "*", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "c", 0, 0)
+                id("a"),
+                op("-"),
+                id("b"),
+                op("*"),
+                id("c")
             ),
             // Mixed operators: a + b - c * d / e
             List.of(
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "a", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "+", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "b", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "-", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "c", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "*", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "d", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "/", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "e", 0, 0)
+                id("a"),
+                op("+"),
+                id("b"),
+                op("-"),
+                id("c"),
+                op("*"),
+                id("d"),
+                op("/"),
+                id("e")
             ),
             // Left associativity: a - b - c (should parse as (a - b) - c)
             List.of(
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "a", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "-", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "b", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "-", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "c", 0, 0)
+                id("a"),
+                op("-"),
+                id("b"),
+                op("-"),
+                id("c")
             ),
             // Left associativity: a / b / c (should parse as (a / b) / c)
             List.of(
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "a", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "/", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "b", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "/", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "c", 0, 0)
+                id("a"),
+                op("/"),
+                id("b"),
+                op("/"),
+                id("c")
             ),
             // Same precedence: a * b / c (should parse as (a * b) / c)
             List.of(
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "a", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "*", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "b", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "/", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "c", 0, 0)
+                id("a"),
+                op("*"),
+                id("b"),
+                op("/"),
+                id("c")
             ),
             // Parenthesized expression: (x + y)
             List.of(
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "(", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "x", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "+", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "y", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, ")", 0, 0)
+                punct("("),
+                id("x"),
+                op("+"),
+                id("y"),
+                punct(")")
             ),
             // Nested parentheses: ((x + y))
             List.of(
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "(", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "(", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "x", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "+", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "y", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, ")", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, ")", 0, 0)
+                punct("("),
+                punct("("),
+                id("x"),
+                op("+"),
+                id("y"),
+                punct(")"),
+                punct(")")
             ),
             // Complex nested: (x + (y * z))
             List.of(
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "(", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "x", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "+", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "(", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "y", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "*", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "z", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, ")", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, ")", 0, 0)
+                punct("("),
+                id("x"),
+                op("+"),
+                punct("("),
+                id("y"),
+                op("*"),
+                id("z"),
+                punct(")"),
+                punct(")")
             ),
             // Multiple levels: ((a + b) * (c - d))
             List.of(
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "(", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "(", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "a", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "+", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "b", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, ")", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "*", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "(", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "c", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "-", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "d", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, ")", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, ")", 0, 0)
+                punct("("),
+                punct("("),
+                id("a"),
+                op("+"),
+                id("b"),
+                punct(")"),
+                op("*"),
+                punct("("),
+                id("c"),
+                op("-"),
+                id("d"),
+                punct(")"),
+                punct(")")
             ),
             // Deep nesting: (((x)))
             List.of(
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "(", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "(", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "(", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "x", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, ")", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, ")", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, ")", 0, 0)
+                punct("("),
+                punct("("),
+                punct("("),
+                id("x"),
+                punct(")"),
+                punct(")"),
+                punct(")")
             ),
             // Parentheses with method call: (foo() + bar())
             List.of(
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "(", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "foo", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "(", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, ")", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "+", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "bar", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "(", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, ")", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, ")", 0, 0)
+                punct("("),
+                id("foo"),
+                punct("("),
+                punct(")"),
+                op("+"),
+                id("bar"),
+                punct("("),
+                punct(")"),
+                punct(")")
             ),
             // Array access: arr[i]
             List.of(
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "arr", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "[", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "i", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "]", 0, 0)
+                id("arr"),
+                punct("["),
+                id("i"),
+                punct("]")
             ),
             // Method call: foo()
             List.of(
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "foo", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "(", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, ")", 0, 0)
+                id("foo"),
+                punct("("),
+                punct(")")
             ),
             // Method call with argument: bar(x)
             List.of(
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "bar", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "(", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "x", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, ")", 0, 0)
+                id("bar"),
+                punct("("),
+                id("x"),
+                punct(")")
             )
         );
     }
@@ -307,32 +316,32 @@ public class ParseExprTest {
         return Stream.of(
             // Missing closing parenthesis
             List.of(
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "(", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "x", 0, 0)
+                punct("("),
+                id("x")
             ),
             // Missing operand after PUNCTUATION
             List.of(
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "x", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "+", 0, 0)
+                id("x"),
+                op("+")
             ),
             // Missing array index
             List.of(
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "arr", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "[", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "]", 0, 0)
+                id("arr"),
+                punct("["),
+                punct("]")
             ),
             // Invalid PUNCTUATION sequence
             List.of(
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "x", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "+", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "*", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.INTLITERAL, "5", 0, 0)
+                id("x"),
+                op("+"),
+                op("*"),
+                intLit("5")
             ),
             // Missing closing bracket for array access
             List.of(
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "arr", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "[", 0, 0),
-                new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "i", 0, 0)
+                id("arr"),
+                punct("["),
+                id("i")
             )
         );
     }
