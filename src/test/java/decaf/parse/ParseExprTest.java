@@ -34,7 +34,7 @@ public class ParseExprTest {
         );
 
         Parse parser = new Parse(tokens);
-        ParseResult result = parser.parseExpr(0, 0);
+        ParseResult result = parser.parseExpr(0, 5);
         
         // Using the builder pattern for cleaner, more readable test construction
         ASTExpr expectedAST = ASTExpr.add()
@@ -45,7 +45,12 @@ public class ParseExprTest {
             .right("c")
             .build();
         ParseResult expectedResult = new ParseResult(expectedAST, 5);
-        
+
+        System.out.println("Expected AST: " + expectedAST.prettyPrint());
+        System.out.println("Parsed AST: " + result.tree.prettyPrint());
+        System.out.println("Expected next index: " + expectedResult.nextPos);
+        System.out.println("Parsed next index: " + result.nextPos);
+
         // Your test assertions here...
         assertTrue(expectedResult.equals(result), "Parsed AST does not match expected AST.");
     }

@@ -4,9 +4,8 @@ import decaf.types.LexicalToken;
 
 public class ASTExpr extends ASTBase {
     public static enum Fixity {
-        PREFIX,
-        INFIX,
-        POSTFIX
+        LEFT,
+        RIGHT
     }
     public static enum Arity {
         UNARY(1),
@@ -118,8 +117,7 @@ public class ASTExpr extends ASTBase {
             }
             
             ASTExpr expr = new ASTExpr(fixity, arity);
-            // Add operator as first child for identification
-            expr.addChild(new ASTBase(operator));
+            expr.setToken(operator);
             // Add operands
             for (ASTBase operand : operands) {
                 expr.addChild(operand);
@@ -130,11 +128,11 @@ public class ASTExpr extends ASTBase {
     
     // Static factory methods for binary infix operations
     public static Builder binaryInfix(LexicalToken operator) {
-        return new Builder(Fixity.INFIX, Arity.BINARY, operator);
+        return new Builder(Fixity.LEFT, Arity.BINARY, operator);
     }
     
     public static Builder binaryInfix(String operator) {
-        return new Builder(Fixity.INFIX, Arity.BINARY, operator);
+        return new Builder(Fixity.LEFT, Arity.BINARY, operator);
     }
     
     public static Builder add() {
@@ -179,19 +177,19 @@ public class ASTExpr extends ASTBase {
     
     // Static factory methods for unary operations
     public static Builder unaryPrefix(LexicalToken operator) {
-        return new Builder(Fixity.PREFIX, Arity.UNARY, operator);
+        return new Builder(Fixity.RIGHT, Arity.UNARY, operator);
     }
     
     public static Builder unaryPrefix(String operator) {
-        return new Builder(Fixity.PREFIX, Arity.UNARY, operator);
+        return new Builder(Fixity.RIGHT, Arity.UNARY, operator);
     }
     
     public static Builder unaryPostfix(LexicalToken operator) {
-        return new Builder(Fixity.POSTFIX, Arity.UNARY, operator);
+        return new Builder(Fixity.LEFT, Arity.UNARY, operator);
     }
     
     public static Builder unaryPostfix(String operator) {
-        return new Builder(Fixity.POSTFIX, Arity.UNARY, operator);
+        return new Builder(Fixity.LEFT, Arity.UNARY, operator);
     }
     
     public static Builder negate() {
@@ -204,11 +202,11 @@ public class ASTExpr extends ASTBase {
     
     // Static factory method for ternary operations
     public static Builder ternary(LexicalToken operator) {
-        return new Builder(Fixity.INFIX, Arity.TERNARY, operator);
+        return new Builder(Fixity.LEFT, Arity.TERNARY, operator);
     }
     
     public static Builder ternary(String operator) {
-        return new Builder(Fixity.INFIX, Arity.TERNARY, operator);
+        return new Builder(Fixity.LEFT, Arity.TERNARY, operator);
     }
     
     public static Builder conditional() {

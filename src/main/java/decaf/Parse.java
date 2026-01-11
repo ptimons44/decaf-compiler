@@ -29,8 +29,20 @@ public class Parse {
 
     @AllArgsConstructor
     public static class ParseResult {
-        ASTBase tree;
-        int nextPos;
+        public ASTBase tree;
+        public int nextPos;
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) return true;
+            if (obj == null || getClass() != obj.getClass()) return false;
+
+            ParseResult other = (ParseResult) obj;
+
+            return this.nextPos == other.nextPos &&
+                   ((this.tree == null && other.tree == null) ||
+                    (this.tree != null && this.tree.equals(other.tree)));
+        }
     }
 
     private SyntacticEnv getSyntacticEnv(LexicalToken token) {
@@ -78,30 +90,30 @@ public class Parse {
          * Uses LL(1) parsing to parse the token stream for non-Expression grammar rules.
          * Uses Pratt parsing to parse Expression grammar rules.
          */
-        this.tokens = tokens;
+        this.tokens = new ArrayList<>(tokens); // Create mutable copy
         this.tokens.add(new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "EOF", -1, -1)); // EOF token
         this.ast = new ASTBase();
 
-        LexicalToken lookahead = null;
-        Integer pos = 0; // spawned methods can modify
-        boolean isValid = true;
-        while (pos < tokens.size()) {
-            lookahead = tokens.get(pos);
-            SyntacticEnv syntacticEnv = getSyntacticEnv(lookahead);
-            if (syntacticEnv == SyntacticEnv.DECL) {
-                isValid &= parseDecl(pos, this.ast);
-            } else if (syntacticEnv == SyntacticEnv.STMT) {
-                isValid &= parseStmt(pos, this.ast);
-            } else if (syntacticEnv == SyntacticEnv.EXPR) {
-                continue; // TODO: implement expression parsing
-                // isValid &= parseExpr(pos, 0);
-            } else {
-                this.error = "Unknown syntactic environment for token: " + lookahead.toString();
-                return;
-            }
-            // TODO: remove
-            break;
-        }
+        // LexicalToken lookahead = null;
+        // Integer pos = 0; // spawned methods can modify
+        // boolean isValid = true;
+        // while (pos < tokens.size()) {
+        //     lookahead = tokens.get(pos);
+        //     SyntacticEnv syntacticEnv = getSyntacticEnv(lookahead);
+        //     if (syntacticEnv == SyntacticEnv.DECL) {
+        //         isValid &= parseDecl(pos, this.ast);
+        //     } else if (syntacticEnv == SyntacticEnv.STMT) {
+        //         isValid &= parseStmt(pos, this.ast);
+        //     } else if (syntacticEnv == SyntacticEnv.EXPR) {
+        //         continue; // TODO: implement expression parsing
+        //         // isValid &= parseExpr(pos, 0);
+        //     } else {
+        //         this.error = "Unknown syntactic environment for token: " + lookahead.toString();
+        //         return;
+        //     }
+        //     // TODO: remove
+        //     break;
+        // }
     }
 
     /*
@@ -215,10 +227,75 @@ public class Parse {
         return parseDeclOrStmt(pos);
     }
 
+    private class PrecedenceInfo {
+        public int precedence;
+        public ASTExpr.Fixity fixity;
+
+        public PrecedenceInfo(int precedence, ASTExpr.Fixity fixity) {
+            this.precedence = precedence;
+            this.fixity = fixity;
+        }
+
+        public PrecedenceInfo(LexicalToken token) {
+            assert token != null : "Token cannot be null";
+            assert token.getTokenType() == LexicalToken.TokenType.PUNCTUATION : 
+                "Token must be an OPERATOR, got: " + token.getTokenType();
+            
+            String op = token.getVal();
+            assert op != null : "Operator value cannot be null";
+            
+            // Set precedence and fixity based on operator
+            switch (op) {
+                case "||":
+                    this.precedence = 1;
+                    this.fixity = ASTExpr.Fixity.LEFT;
+                    break;
+                case "&&":
+                    this.precedence = 2;
+                    this.fixity = ASTExpr.Fixity.LEFT;
+                    break;
+                case "==":
+                case "!=":
+                    this.precedence = 3;
+                    this.fixity = ASTExpr.Fixity.LEFT;
+                    break;
+                case "<":
+                case "<=":
+                case ">":
+                case ">=":
+                    this.precedence = 4;
+                    this.fixity = ASTExpr.Fixity.LEFT;
+                    break;
+                case "+":
+                case "-":
+                    this.precedence = 5;
+                    this.fixity = ASTExpr.Fixity.LEFT;
+                    break;
+                case "*":
+                case "/":
+                case "%":
+                    this.precedence = 6;
+                    this.fixity = ASTExpr.Fixity.LEFT;
+                    break;
+                case "!":
+                case "++":
+                case "--":
+                    this.precedence = 7;
+                    this.fixity = ASTExpr.Fixity.RIGHT;
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown operator: " + op);
+            }
+        }
+    }
+
+
     public ParseResult parseExpr(int startPos, int precedence) throws IndexOutOfBoundsException {
         /*
          * Pre-conditions
+         *   - startPos is within [0, tokens.size())
          *   - startPos is a valid start to an expression
+         *   - precedence >= 0
          * 
          * Uses Pratt-style parsing to parse all subexpressions >= precedence.
          * 
@@ -226,7 +303,78 @@ public class Parse {
          *   - [startPos, nextPos) forms a valid stand-alone expression
          * 
          */
-        return null; // TODO: implement
+
+        // assert pre-conditions
+        assert startPos >= 0 && startPos < this.tokens.size();
+        // assert getSyntacticEnv(this.tokens.get(startPos)) == SyntacticEnv.EXPR;
+        assert precedence >= 0;
+
+        // parsing logic here
+        int pos = startPos;
+        ASTBase root = new ASTBase(this.tokens.get(pos)); // TODO: initialize with proper prefix unary expr
+
+        while (hasNextOperator(pos) && getNextOperatorPrecedence(pos) >= precedence) {
+            // parse subexpression
+            pos++;
+            LexicalToken op = this.tokens.get(pos);
+            PrecedenceInfo precInfo = new PrecedenceInfo(op);
+            if (precInfo.precedence > precedence) {
+                // creates deeper tree in right subtree
+                ParseResult rightResult = parseExpr(pos+1, precInfo.precedence);
+                if (rightResult == null) return null;
+                root = ASTExpr.binaryInfix(op).left(root).right(rightResult.tree).build();
+                pos = rightResult.nextPos;
+            } else {
+                // tree is left-deep
+                ASTBase rightNode = new ASTBase(this.tokens.get(++pos)); // TODO: initialize with proper prefix unary expr
+                root = ASTExpr.binaryInfix(op).left(root).right(rightNode).build();
+            }
+        }
+
+        
+        // assert post-conditions
+        assert true;
+        return new ParseResult(root, ++pos);
+    }
+
+    public boolean hasNextOperator(int pos) {
+        /*
+         * Returns true if there is another infix or postfix operator token after pos.
+         */
+        if (pos+1 < this.tokens.size()) {
+            return isOperator(this.tokens.get(pos+1));
+        }
+        return false;
+    }
+
+    public int getNextOperatorPrecedence(int pos) {
+        /*
+         * Returns the precedence of the next operator token after pos.
+         * Returns -1 if there is no next operator.
+         */
+        if (pos+1 < this.tokens.size()) {
+            LexicalToken nextToken = this.tokens.get(pos+1);
+            if (isOperator(nextToken)) {
+                PrecedenceInfo precInfo = new PrecedenceInfo(nextToken);
+                return precInfo.precedence;
+            }
+        }
+        return -1;
+    }
+
+    public boolean isOperator(LexicalToken token) {
+        /*
+         * Returns true if the token is an operator token.
+         */
+        if (token.getTokenType() == LexicalToken.TokenType.PUNCTUATION) {
+            String op = token.getVal();
+            Set<String> operators = Set.of(
+                "||", "&&", "==", "!=", "<", "<=", ">", ">=",
+                "+", "-", "*", "/", "%", "!", "++", "--"
+            );
+            return operators.contains(op);
+        }
+        return false;
     }
 
     public boolean getIsValidProgram() {

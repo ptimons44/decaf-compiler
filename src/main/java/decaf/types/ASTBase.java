@@ -4,7 +4,9 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Objects;
 
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @NoArgsConstructor
 public class ASTBase {
@@ -17,6 +19,7 @@ public class ASTBase {
 
     private Environment type;
     private List<ASTBase> children = new ArrayList<>(); // Initialize to avoid null pointer
+    @Getter @Setter
     private LexicalToken token;
 
     public ASTBase(LexicalToken token) {
@@ -102,5 +105,97 @@ public class ASTBase {
     
     public List<ASTBase> getChildren() {
         return new ArrayList<>(children); // Return defensive copy
+    }
+    
+    /**
+     * Pretty-prints this AST node and all its children in a tree format
+     * @return A formatted string representation of the AST
+     */
+    public String prettyPrint() {
+        return prettyPrint(0, "");
+    }
+
+    /**
+     * Pretty-prints this AST node with indentation
+     * @param depth Current depth in the tree (for indentation)
+     * @param prefix Prefix for tree structure visualization
+     * @return A formatted string representation of the AST
+     */
+    private String prettyPrint(int depth, String prefix) {
+        StringBuilder sb = new StringBuilder();
+        
+        // Add the current node
+        sb.append(prefix);
+        
+        // Show node type and token info
+        String nodeType = this.getClass().getSimpleName();
+        String tokenInfo = "";
+        
+        if (this.token != null) {
+            tokenInfo = String.format(" [%s: '%s']", 
+                this.token.getTokenType(), 
+                this.token.getVal());
+        }
+        
+        // Special handling for ASTExpr to show operator info
+        if (this instanceof ASTExpr) {
+            ASTExpr expr = (ASTExpr) this;
+            tokenInfo += String.format(" (%s %s)", 
+                expr.getArity(), 
+                expr.getFixity());
+        }
+        
+        sb.append(nodeType).append(tokenInfo).append("\n");
+        
+        // Add children with proper tree structure
+        int childCount = this.getNumChildren();
+        for (int i = 0; i < childCount; i++) {
+            ASTBase child = this.getChildAt(i);
+            boolean isLast = (i == childCount - 1);
+            
+            String childPrefix = prefix + (isLast ? "└── " : "├── ");
+            String nextPrefix = prefix + (isLast ? "    " : "│   ");
+            
+            sb.append(child.prettyPrint(depth + 1, childPrefix));
+            
+            // For multi-line child output, we need to handle the prefix correctly
+            if (child.getNumChildren() > 0) {
+                // The recursive call already handles the tree structure
+            }
+        }
+        
+        return sb.toString();
+    }
+
+    /**
+     * Prints the AST to System.out for debugging
+     */
+    public void debugPrint() {
+        System.out.println(prettyPrint());
+    }
+
+    /**
+     * Creates a compact single-line representation for quick debugging
+     * @return A compact string representation
+     */
+    public String toCompactString() {
+        StringBuilder sb = new StringBuilder();
+        
+        if (this.token != null) {
+            sb.append(this.token.getVal());
+        } else {
+            sb.append(this.getClass().getSimpleName());
+        }
+        
+        if (this.getNumChildren() > 0) {
+            sb.append("(");
+            for (int i = 0; i < this.getNumChildren(); i++) {
+                if (i > 0) sb.append(", ");
+                sb.append(this.getChildAt(i).toCompactString());
+            }
+            sb.append(")");
+        }
+        
+        return sb.toString();
     }
 }
