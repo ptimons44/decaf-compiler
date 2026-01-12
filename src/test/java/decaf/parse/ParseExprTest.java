@@ -23,7 +23,7 @@ public class ParseExprTest extends ParseBaseTest {
      */
     
     @Test
-    public void testAdditionWithSubtraction() {
+    public void testAdditionThenSubtraction() {
         List<LexicalToken> tokens = List.of(
             id("a"),
             op("-"),
@@ -34,7 +34,7 @@ public class ParseExprTest extends ParseBaseTest {
         );
 
         Parse parser = new Parse(tokens);
-        ParseResult result = parser.parseExpr(0, 5);
+        ParseResult result = parser.parseExpr(0);
         
         // Using the builder pattern for cleaner, more readable test construction
         ASTExpr expectedAST = ASTExpr.add()
@@ -68,7 +68,7 @@ public class ParseExprTest extends ParseBaseTest {
     }
 
     @Test
-    public void testMultiplicationWithDivision() {
+    public void testDivisionThenMultiplication() {
         List<LexicalToken> tokens = List.of(
             id("a"),
             op("/"),
@@ -79,7 +79,7 @@ public class ParseExprTest extends ParseBaseTest {
         );
 
         Parse parser = new Parse(tokens);
-        ParseResult result = parser.parseExpr(0, 6);
+        ParseResult result = parser.parseExpr(0);
         
         // Using the builder pattern for cleaner, more readable test construction
         ASTExpr expectedAST = ASTExpr.multiply()
@@ -112,7 +112,7 @@ public class ParseExprTest extends ParseBaseTest {
     }
 
     @Test
-    public void testAdditionWithMultiplication() {
+    public void testAdditionThenMultiplication() {
         List<LexicalToken> tokens = List.of(
             id("a"),
             op("+"),
@@ -123,7 +123,7 @@ public class ParseExprTest extends ParseBaseTest {
         );
 
         Parse parser = new Parse(tokens);
-        ParseResult result = parser.parseExpr(0, 5);
+        ParseResult result = parser.parseExpr(0);
 
         // Using the builder pattern for cleaner, more readable test construction
         ASTExpr expectedAST = ASTExpr.add()
@@ -170,7 +170,7 @@ public class ParseExprTest extends ParseBaseTest {
         );
 
         Parse parser = new Parse(tokens);
-        ParseResult result = parser.parseExpr(0, 6);
+        ParseResult result = parser.parseExpr(0);
 
         // Using the builder pattern for cleaner, more readable test construction
         ASTExpr expectedAST = ASTExpr.add()

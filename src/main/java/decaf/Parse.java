@@ -228,12 +228,12 @@ public class Parse {
     }
 
     private class PrecedenceInfo {
-        public int precedence;
-        public ASTExpr.Fixity fixity;
+        public int leftBindingPower;
+        public int rightBindingPower;
 
-        public PrecedenceInfo(int precedence, ASTExpr.Fixity fixity) {
-            this.precedence = precedence;
-            this.fixity = fixity;
+        public PrecedenceInfo(int leftBindingPower, int rightBindingPower) {
+            this.leftBindingPower = leftBindingPower;
+            this.rightBindingPower = rightBindingPower;
         }
 
         public PrecedenceInfo(LexicalToken token) {
@@ -244,44 +244,44 @@ public class Parse {
             String op = token.getVal();
             assert op != null : "Operator value cannot be null";
             
-            // Set precedence and fixity based on operator
+            // Set binding powers based on operator
             switch (op) {
                 case "||":
-                    this.precedence = 1;
-                    this.fixity = ASTExpr.Fixity.LEFT;
+                    this.leftBindingPower = 1;
+                    this.rightBindingPower = 2; // LEFT: rbp = lbp + 1
                     break;
                 case "&&":
-                    this.precedence = 2;
-                    this.fixity = ASTExpr.Fixity.LEFT;
+                    this.leftBindingPower = 2;
+                    this.rightBindingPower = 3; // LEFT: rbp = lbp + 1
                     break;
                 case "==":
                 case "!=":
-                    this.precedence = 3;
-                    this.fixity = ASTExpr.Fixity.LEFT;
+                    this.leftBindingPower = 3;
+                    this.rightBindingPower = 4; // LEFT: rbp = lbp + 1
                     break;
                 case "<":
                 case "<=":
                 case ">":
                 case ">=":
-                    this.precedence = 4;
-                    this.fixity = ASTExpr.Fixity.LEFT;
+                    this.leftBindingPower = 4;
+                    this.rightBindingPower = 5; // LEFT: rbp = lbp + 1
                     break;
                 case "+":
                 case "-":
-                    this.precedence = 5;
-                    this.fixity = ASTExpr.Fixity.LEFT;
+                    this.leftBindingPower = 5;
+                    this.rightBindingPower = 6; // LEFT: rbp = lbp + 1
                     break;
                 case "*":
                 case "/":
                 case "%":
-                    this.precedence = 6;
-                    this.fixity = ASTExpr.Fixity.LEFT;
+                    this.leftBindingPower = 6;
+                    this.rightBindingPower = 7; // LEFT: rbp = lbp + 1
                     break;
                 case "!":
                 case "++":
                 case "--":
-                    this.precedence = 7;
-                    this.fixity = ASTExpr.Fixity.RIGHT;
+                    this.leftBindingPower = 7;
+                    this.rightBindingPower = 7; // RIGHT: rbp = lbp
                     break;
                 default:
                     throw new IllegalArgumentException("Unknown operator: " + op);
@@ -289,6 +289,9 @@ public class Parse {
         }
     }
 
+    public ParseResult parseExpr(int startPos) throws IndexOutOfBoundsException {
+        return parseExpr(startPos, 0);
+    }
 
     public ParseResult parseExpr(int startPos, int precedence) throws IndexOutOfBoundsException {
         /*
@@ -298,9 +301,13 @@ public class Parse {
          *   - precedence >= 0
          * 
          * Uses Pratt-style parsing to parse all subexpressions >= precedence.
+         *   - The RHS of an operator must be parsed starting at the token after the operator, 
+         *     with a strictly higher minimum binding power than the operator’s left binding power.
          * 
          * Post-conditions
          *   - [startPos, nextPos) forms a valid stand-alone expression
+         *   - returns a fully-formed AST subtree
+         *     with no missing children and no post-hoc mutation required
          * 
          */
 
@@ -310,57 +317,51 @@ public class Parse {
         assert precedence >= 0;
 
         // parsing logic here
-        int pos = startPos;
-        ASTBase root = new ASTBase(this.tokens.get(pos)); // TODO: initialize with proper prefix unary expr
+        ParseResult prefixResult = parseExprPrefix(startPos);
+        if (prefixResult == null) return null;
+        int pos = prefixResult.nextPos;
+        ASTBase root = prefixResult.tree; 
 
-        while (hasNextOperator(pos) && getNextOperatorPrecedence(pos) >= precedence) {
-            // parse subexpression
-            pos++;
+        while (hasInfixOperator(pos)) {
+            /*
+             * pos is always an operator token here
+             */
+            
             LexicalToken op = this.tokens.get(pos);
             PrecedenceInfo precInfo = new PrecedenceInfo(op);
-            if (precInfo.precedence > precedence) {
-                // creates new subtree
-                // places in right child of current root (overwriting previous right child)
-                ParseResult rightResult = parseExpr(pos-1, precInfo.precedence);
-                if (rightResult == null) return null;
-                root.setRightChild(rightResult.tree);
-                pos = rightResult.nextPos - 1;
-            } else {
-                // tree is left-deep
-                ASTBase rightNode = new ASTBase(this.tokens.get(++pos)); // TODO: initialize with proper prefix unary expr
-                root = ASTExpr.binaryInfix(op).left(root).right(rightNode).build();
+            if (precInfo.leftBindingPower < precedence) {
+                break;
             }
-        }
 
+            pos++; // consume operator
+
+            ParseResult result = parseExpr(pos, precInfo.rightBindingPower);
+            ASTBase right = result.tree;
+            if (right == null) return null;
+            pos = result.nextPos;
+
+            root = ASTExpr.binaryInfix(op).left(root).right(right).build();
+        }
         
         // assert post-conditions
         assert true;
-        return new ParseResult(root, ++pos);
+        return new ParseResult(root, pos);
     }
 
-    public boolean hasNextOperator(int pos) {
+    public ParseResult parseExprPrefix(int startPos) throws IndexOutOfBoundsException {
+        ASTBase root = new ASTBase(this.tokens.get(startPos)); // TODO: initialize with proper prefix unary expr
+        int pos = startPos+1;
+        return new ParseResult(root, pos);
+    }
+
+    public boolean hasInfixOperator(int pos) {
         /*
-         * Returns true if there is another infix or postfix operator token after pos.
+         * Returns true if there is a infix operator token at pos.
          */
-        if (pos+1 < this.tokens.size()) {
-            return isOperator(this.tokens.get(pos+1));
+        if (pos < this.tokens.size()) {
+            return isOperator(this.tokens.get(pos));
         }
         return false;
-    }
-
-    public int getNextOperatorPrecedence(int pos) {
-        /*
-         * Returns the precedence of the next operator token after pos.
-         * Returns -1 if there is no next operator.
-         */
-        if (pos+1 < this.tokens.size()) {
-            LexicalToken nextToken = this.tokens.get(pos+1);
-            if (isOperator(nextToken)) {
-                PrecedenceInfo precInfo = new PrecedenceInfo(nextToken);
-                return precInfo.precedence;
-            }
-        }
-        return -1;
     }
 
     public boolean isOperator(LexicalToken token) {
