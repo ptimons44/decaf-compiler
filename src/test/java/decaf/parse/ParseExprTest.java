@@ -23,7 +23,7 @@ public class ParseExprTest extends ParseBaseTest {
      */
     
     @Test
-    public void testAdditionThenSubtraction() {
+    public void testSubAdd() {
         List<LexicalToken> tokens = List.of(
             id("a"),
             op("-"),
@@ -68,7 +68,52 @@ public class ParseExprTest extends ParseBaseTest {
     }
 
     @Test
-    public void testDivisionThenMultiplication() {
+    public void testSubSub() {
+        List<LexicalToken> tokens = List.of(
+            id("a"),
+            op("-"),
+            id("b"),
+            op("-"),
+            id("c"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens);
+        ParseResult result = parser.parseExpr(0);
+        
+        // Using the builder pattern for cleaner, more readable test construction
+        ASTExpr expectedAST = ASTExpr.subtract()
+            .left(ASTExpr.subtract()
+                .left("a")
+                .right("b")
+                .build())
+            .right("c")
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Expected nextPos: %d
+                Actual:
+                %s
+                Actual nextPos: %d
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
+                )
+        );
+
+    }
+
+    @Test
+    public void testDivMul() {
         List<LexicalToken> tokens = List.of(
             id("a"),
             op("/"),
@@ -112,7 +157,7 @@ public class ParseExprTest extends ParseBaseTest {
     }
 
     @Test
-    public void testAdditionThenMultiplication() {
+    public void testAddMul() {
         List<LexicalToken> tokens = List.of(
             id("a"),
             op("+"),
@@ -159,7 +204,7 @@ public class ParseExprTest extends ParseBaseTest {
     }
 
     @Test
-    public void testMultiplicationThenAddition() {
+    public void testMulAdd() {
         List<LexicalToken> tokens = List.of(
             id("a"),
             op("*"),
@@ -188,6 +233,63 @@ public class ParseExprTest extends ParseBaseTest {
             result,
             () -> """
             
+                Expected nextPos: %d
+                Actual nextPos: %d
+
+                AST mismatch:
+                Expected:
+                %s
+                Actual:
+                %s
+                
+                """.formatted(
+                    expectedResult.nextPos,
+                    result.nextPos,
+                    expectedAST.prettyPrint(),
+                    result.tree.prettyPrint()
+                )
+        );
+    }
+
+    @Test
+    public void testAddMulSubDiv() {
+        List<LexicalToken> tokens = List.of(
+            id("a"),
+            op("+"),
+            id("b"),
+            op("*"),
+            id("c"),
+            op("-"),
+            id("d"),
+            op("/"),
+            id("e"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens);
+        ParseResult result = parser.parseExpr(0);
+
+        // Using the builder pattern for cleaner, more readable test construction
+        ASTExpr expectedAST = ASTExpr.subtract()
+            .left(ASTExpr.add()
+                .left("a")
+                .right(ASTExpr.multiply()
+                    .left("b")
+                    .right("c")
+                    .build())
+                .build())
+            .right(ASTExpr.divide()
+                .left("d")
+                .right("e")
+                .build())
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+
                 Expected nextPos: %d
                 Actual nextPos: %d
 
