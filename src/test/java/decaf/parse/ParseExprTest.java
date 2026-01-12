@@ -308,6 +308,178 @@ public class ParseExprTest extends ParseBaseTest {
         );
     }
 
+    @Test
+    public void testSimpleParentheses() {
+        List<LexicalToken> tokens = List.of(
+            punct("("),
+            id("a"),
+            punct(")"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens);
+        ParseResult result = parser.parseExpr(0);
+        
+        ASTBase expectedAST = ASTExpr.leaf("a");
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Expected nextPos: %d
+                Actual:
+                %s
+                Actual nextPos: %d
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
+                )
+        );
+    }
+
+    @Test
+    public void testParenthesesChangePrecedence() {
+        List<LexicalToken> tokens = List.of(
+            punct("("),
+            id("a"),
+            op("+"),
+            id("b"),
+            punct(")"),
+            op("*"),
+            id("c"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens);
+        ParseResult result = parser.parseExpr(0);
+        
+        ASTExpr expectedAST = ASTExpr.multiply()
+            .left(ASTExpr.add()
+                .left("a")
+                .right("b")
+                .build())
+            .right("c")
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Expected nextPos: %d
+                Actual:
+                %s
+                Actual nextPos: %d
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
+                )
+        );
+    }
+
+    @Test
+    public void testNestedParentheses() {
+        List<LexicalToken> tokens = List.of(
+            punct("("),
+            punct("("),
+            id("a"),
+            op("+"),
+            id("b"),
+            punct(")"),
+            punct(")"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens);
+        ParseResult result = parser.parseExpr(0);
+        
+        ASTExpr expectedAST = ASTExpr.add()
+            .left("a")
+            .right("b")
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Expected nextPos: %d
+                Actual:
+                %s
+                Actual nextPos: %d
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
+                )
+        );
+    }
+
+    @Test
+    public void testParenthesesWithMultipleOperators() {
+        List<LexicalToken> tokens = List.of(
+            id("a"),
+            op("*"),
+            punct("("),
+            id("b"),
+            op("+"),
+            id("c"),
+            punct(")"),
+            op("/"),
+            id("d"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens);
+        ParseResult result = parser.parseExpr(0);
+        
+        ASTExpr expectedAST = ASTExpr.divide()
+            .left(ASTExpr.multiply()
+                .left("a")
+                .right(ASTExpr.add()
+                    .left("b")
+                    .right("c")
+                    .build())
+                .build())
+            .right("d")
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Expected nextPos: %d
+                Actual:
+                %s
+                Actual nextPos: %d
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
+                )
+        );
+    }
+
     /*
      * 2. Validity / acceptance tests (should parse)
      */

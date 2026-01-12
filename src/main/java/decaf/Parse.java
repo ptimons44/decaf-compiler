@@ -349,6 +349,25 @@ public class Parse {
     }
 
     public ParseResult parseExprPrefix(int startPos) throws IndexOutOfBoundsException {
+        LexicalToken token = this.tokens.get(startPos);
+        if (token.getTokenType() == LexicalToken.TokenType.PUNCTUATION && token.getVal().equals("(")) {
+            // parse parenthesized expression
+            ParseResult innerResult = parseExpr(startPos + 1, 0);
+            if (innerResult == null) return null;
+            int pos = innerResult.nextPos;
+
+            // expect closing parenthesis
+            if (pos >= this.tokens.size() || 
+                !(this.tokens.get(pos).getTokenType() == LexicalToken.TokenType.PUNCTUATION && 
+                  this.tokens.get(pos).getVal().equals(")"))) {
+                this.error = "Expected closing parenthesis at position " + pos;
+                return null;
+            }
+            pos++; // consume ')'
+
+            return new ParseResult(innerResult.tree, pos);
+        }
+
         ASTBase root = new ASTBase(this.tokens.get(startPos)); // TODO: initialize with proper prefix unary expr
         int pos = startPos+1;
         return new ParseResult(root, pos);
