@@ -156,6 +156,43 @@ public class ASTExpr extends ASTBase {
             return right(new LexicalToken(LexicalToken.TokenType.IDENTIFIER, identifier, 0, 0));
         }
         
+        // For array access - array and index are operands
+        public Builder array(ASTBase array) {
+            if (arity != Arity.BINARY) {
+                throw new IllegalStateException("array() can only be used with array access operations");
+            }
+            if (!operands.isEmpty()) {
+                throw new IllegalStateException("Array must be the first operand");
+            }
+            return operand(array);
+        }
+        
+        public Builder array(LexicalToken token) {
+            return array(new ASTBase(token));
+        }
+        
+        public Builder array(String identifier) {
+            return array(new LexicalToken(LexicalToken.TokenType.IDENTIFIER, identifier, 0, 0));
+        }
+        
+        public Builder index(ASTBase index) {
+            if (arity != Arity.BINARY) {
+                throw new IllegalStateException("index() can only be used with array access operations");
+            }
+            if (operands.size() != 1) {
+                throw new IllegalStateException("Must set array before index");
+            }
+            return operand(index);
+        }
+        
+        public Builder index(LexicalToken token) {
+            return index(new ASTBase(token));
+        }
+        
+        public Builder index(String identifier) {
+            return index(new LexicalToken(LexicalToken.TokenType.IDENTIFIER, identifier, 0, 0));
+        }
+        
         public ASTExpr build() {
             if (arity != Arity.UNBOUNDED && operands.size() != arity.getNumOperands()) {
                 throw new IllegalStateException("Expected " + arity.getNumOperands() + 
@@ -263,6 +300,10 @@ public class ASTExpr extends ASTBase {
     public static Builder methodCall() {
         // Start with empty function name - will be set via function() method
         return new Builder(Fixity.LEFT, Arity.UNBOUNDED, new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "", 0, 0));
+    }
+
+    public static Builder arrayAccess() {
+        return new Builder(Fixity.LEFT, Arity.BINARY, new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "[]", 0, 0));
     }
     
     // Helper method to create leaf nodes from tokens

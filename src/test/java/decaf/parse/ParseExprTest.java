@@ -532,8 +532,8 @@ public class ParseExprTest extends ParseBaseTest {
         Parse parser = new Parse(tokens);
         ParseResult result = parser.parseExpr(0);
         
-        ASTExpr expectedAST = ASTExpr.randomAccess()
-            .id("a")
+        ASTExpr expectedAST = ASTExpr.arrayAccess()
+            .array("a")
             .index("b")
             .build();
         ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
