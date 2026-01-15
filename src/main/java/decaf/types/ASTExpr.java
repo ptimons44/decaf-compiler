@@ -1,6 +1,8 @@
 package decaf.types;
 
 import decaf.types.LexicalToken;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ASTExpr extends ASTBase {
     public static enum Fixity {
@@ -10,7 +12,8 @@ public class ASTExpr extends ASTBase {
     public static enum Arity {
         UNARY(1),
         BINARY(2),
-        TERNARY(3);
+        TERNARY(3),
+        UNBOUNDED(-1);
         
         private final int numOperands;
         
@@ -34,7 +37,7 @@ public class ASTExpr extends ASTBase {
 
     @Override
     public void addChild(ASTBase child) {
-        if (this.getNumChildren() >= this.arity.getNumOperands()) {
+        if (this.arity != Arity.UNBOUNDED && this.getNumChildren() >= this.arity.getNumOperands()) {
             throw new IllegalStateException("Cannot add more children to ASTExpr than its arity allows");
         }
         super.addChild(child);
@@ -45,14 +48,13 @@ public class ASTExpr extends ASTBase {
         private Fixity fixity;
         private Arity arity;
         private LexicalToken operator;
-        private ASTBase[] operands;
-        private int operandCount = 0;
+        private List<ASTBase> operands;
         
         public Builder(Fixity fixity, Arity arity, LexicalToken operator) {
             this.fixity = fixity;
             this.arity = arity;
             this.operator = operator;
-            this.operands = new ASTBase[arity.getNumOperands()];
+            this.operands = new ArrayList<>();
         }
         
         // Convenience constructor for string operators (for testing)
@@ -61,10 +63,10 @@ public class ASTExpr extends ASTBase {
         }
         
         public Builder operand(ASTBase operand) {
-            if (operandCount >= arity.getNumOperands()) {
+            if (arity != Arity.UNBOUNDED && operands.size() >= arity.getNumOperands()) {
                 throw new IllegalStateException("Too many operands for " + arity + " operation");
             }
-            this.operands[operandCount++] = operand;
+            this.operands.add(operand);
             return this;
         }
         
@@ -74,6 +76,50 @@ public class ASTExpr extends ASTBase {
         
         public Builder operand(String identifier) {
             return operand(new LexicalToken(LexicalToken.TokenType.IDENTIFIER, identifier, 0, 0));
+        }
+        
+        // For method calls - function name goes in the operator token
+        public Builder function(ASTBase function) {
+            if (arity != Arity.UNBOUNDED) {
+                throw new IllegalStateException("function() can only be used with method calls");
+            }
+            if (function.getToken() == null) {
+                throw new IllegalStateException("Function must have a token");
+            }
+            this.operator = function.getToken();
+            return this;
+        }
+        
+        public Builder function(LexicalToken token) {
+            if (arity != Arity.UNBOUNDED) {
+                throw new IllegalStateException("function() can only be used with method calls");
+            }
+            this.operator = token;
+            return this;
+        }
+        
+        public Builder function(String identifier) {
+            if (arity != Arity.UNBOUNDED) {
+                throw new IllegalStateException("function() can only be used with method calls");
+            }
+            this.operator = new LexicalToken(LexicalToken.TokenType.IDENTIFIER, identifier, 0, 0);
+            return this;
+        }
+        
+        // For method calls - arguments are the operands
+        public Builder argument(ASTBase argument) {
+            if (arity != Arity.UNBOUNDED) {
+                throw new IllegalStateException("argument() can only be used with method calls");
+            }
+            return operand(argument);
+        }
+        
+        public Builder argument(LexicalToken token) {
+            return argument(new ASTBase(token));
+        }
+        
+        public Builder argument(String identifier) {
+            return argument(new LexicalToken(LexicalToken.TokenType.IDENTIFIER, identifier, 0, 0));
         }
         
         // For binary operations - more intuitive naming
@@ -96,7 +142,7 @@ public class ASTExpr extends ASTBase {
             if (arity != Arity.BINARY) {
                 throw new IllegalStateException("right() can only be used with BINARY operations");
             }
-            if (operandCount != 1) {
+            if (operands.size() != 1) {
                 throw new IllegalStateException("Must set left operand before right operand");
             }
             return operand(right);
@@ -111,10 +157,11 @@ public class ASTExpr extends ASTBase {
         }
         
         public ASTExpr build() {
-            if (operandCount != arity.getNumOperands()) {
+            if (arity != Arity.UNBOUNDED && operands.size() != arity.getNumOperands()) {
                 throw new IllegalStateException("Expected " + arity.getNumOperands() + 
-                    " operands but got " + operandCount);
+                    " operands but got " + operands.size());
             }
+            // For method calls, we don't require a minimum number of operands (0-arg functions are valid)
             
             ASTExpr expr = new ASTExpr(fixity, arity);
             expr.setToken(operator);
@@ -211,6 +258,11 @@ public class ASTExpr extends ASTBase {
     
     public static Builder conditional() {
         return ternary("?:");
+    }
+
+    public static Builder methodCall() {
+        // Start with empty function name - will be set via function() method
+        return new Builder(Fixity.LEFT, Arity.UNBOUNDED, new LexicalToken(LexicalToken.TokenType.IDENTIFIER, "", 0, 0));
     }
     
     // Helper method to create leaf nodes from tokens
