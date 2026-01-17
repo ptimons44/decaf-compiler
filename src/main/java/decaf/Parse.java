@@ -22,108 +22,6 @@ public class Parse {
     private static final String POSTFIX_INCREMENT_TOKEN = "++";
     private static final String POSTFIX_DECREMENT_TOKEN = "--";
 
-    private List<LexicalToken> tokens;
-    private int pos = 0;
-    private String error = null;
-    private List<String> warnings = new ArrayList<>();
-    private ASTBase ast = null;
-
-    private enum SyntacticEnv {
-        DECL,
-        STMT,
-        EXPR,
-        ERROR
-    }
-
-    @AllArgsConstructor
-    public static class ParseResult {
-        public ASTBase tree;
-        public int nextPos;
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj) return true;
-            if (obj == null || getClass() != obj.getClass()) return false;
-
-            ParseResult other = (ParseResult) obj;
-
-            return this.nextPos == other.nextPos &&
-                   ((this.tree == null && other.tree == null) ||
-                    (this.tree != null && this.tree.equals(other.tree)));
-        }
-    }
-
-    private SyntacticEnv getSyntacticEnv(LexicalToken token) {
-        LexicalToken.TokenType tokenType = token.getTokenType();
-        String tokenValue = token.getVal();
-
-        // Declarations: start with type keywords (int, long, bool) or void
-        if (LexicalToken.TokenType.KEYWORD.equals(tokenType) &&
-            ("int".equals(tokenValue) || "long".equals(tokenValue) ||
-             "bool".equals(tokenValue) || "void".equals(tokenValue))) {
-            return SyntacticEnv.DECL;
-        }
-
-        // Statements: start with statement keywords
-        if (LexicalToken.TokenType.KEYWORD.equals(tokenType) &&
-            ("if".equals(tokenValue) || "while".equals(tokenValue) ||
-             "for".equals(tokenValue) || "return".equals(tokenValue) ||
-             "break".equals(tokenValue) || "continue".equals(tokenValue))) {
-            return SyntacticEnv.STMT;
-        }
-
-        // Statements: identifiers can start statements (assignments, method calls)
-        if (LexicalToken.TokenType.IDENTIFIER.equals(tokenType)) {
-            return SyntacticEnv.STMT;
-        }
-
-        // Block statements
-        if (LexicalToken.TokenType.PUNCTUATION.equals(tokenType) && "{".equals(tokenValue)) {
-            return SyntacticEnv.STMT;
-        }
-
-        // Expressions: literals or opening parenthesis
-        if (LexicalToken.TokenType.INTLITERAL.equals(tokenType) ||
-            LexicalToken.TokenType.STRINGLITERAL.equals(tokenType) ||
-            LexicalToken.TokenType.BOOLEANLITERAL.equals(tokenType) ||
-            (LexicalToken.TokenType.PUNCTUATION.equals(tokenType) && "(".equals(tokenValue))) {
-            return SyntacticEnv.EXPR;
-        }
-
-        return SyntacticEnv.ERROR;
-    }
-
-    public Parse(List<LexicalToken> tokens) {
-        /*
-         * Uses LL(1) parsing to parse the token stream for non-Expression grammar rules.
-         * Uses Pratt parsing to parse Expression grammar rules.
-         */
-        this.tokens = new ArrayList<>(tokens); // Create mutable copy
-        this.tokens.add(new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "EOF", -1, -1)); // EOF token
-        this.ast = new ASTBase();
-
-        // LexicalToken lookahead = null;
-        // Integer pos = 0; // spawned methods can modify
-        // boolean isValid = true;
-        // while (pos < tokens.size()) {
-        //     lookahead = tokens.get(pos);
-        //     SyntacticEnv syntacticEnv = getSyntacticEnv(lookahead);
-        //     if (syntacticEnv == SyntacticEnv.DECL) {
-        //         isValid &= parseDecl(pos, this.ast);
-        //     } else if (syntacticEnv == SyntacticEnv.STMT) {
-        //         isValid &= parseStmt(pos, this.ast);
-        //     } else if (syntacticEnv == SyntacticEnv.EXPR) {
-        //         continue; // TODO: implement expression parsing
-        //         // isValid &= parseExpr(pos, 0);
-        //     } else {
-        //         this.error = "Unknown syntactic environment for token: " + lookahead.toString();
-        //         return;
-        //     }
-        //     // TODO: remove
-        //     break;
-        // }
-    }
-
     /*
      * 
      * Decl CFGNodes
@@ -181,6 +79,80 @@ public class Parse {
      * Stmt CFGNodes
      * 
      */
+    // TODO: write out statement CFGNodes
+
+    private List<LexicalToken> tokens;
+    private int pos = 0;
+    private String error = null;
+    private List<String> warnings = new ArrayList<>();
+    private ASTBase ast = null;
+
+    @AllArgsConstructor
+    public static class ParseResult {
+        public ASTBase tree;
+        public int nextPos;
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) return true;
+            if (obj == null || getClass() != obj.getClass()) return false;
+
+            ParseResult other = (ParseResult) obj;
+
+            return this.nextPos == other.nextPos &&
+                   ((this.tree == null && other.tree == null) ||
+                    (this.tree != null && this.tree.equals(other.tree)));
+        }
+    }
+
+    public Parse(List<LexicalToken> tokens) {
+        /*
+         * Uses LL(1) parsing to parse the token stream for non-Expression grammar rules.
+         * Uses Pratt parsing to parse Expression grammar rules.
+         */
+        this.tokens = new ArrayList<>(tokens); // Create mutable copy
+        this.tokens.add(new LexicalToken(LexicalToken.TokenType.PUNCTUATION, "EOF", -1, -1)); // EOF token
+        this.ast = new ASTBase();
+    }
+
+    private LexicalToken gobble() throws ParseException {
+        /*
+         * Advances the token position by one.
+         * Returns the current token before advancing.
+         */
+        if (this.pos < this.tokens.size() - 1) {
+            LexicalToken currentToken = this.tokens.get(this.pos);
+            this.pos++;
+            return currentToken;
+        } else {
+            throw new ParseException("Index out of bounds error: No more tokens");
+        }
+    }
+    private LexicalToken lookahead() throws ParseException {
+        /*
+         * Precondition: to be called after gobble
+         */
+        if (this.pos < this.tokens.size()) {
+            return this.tokens.get(this.pos);
+        } else {
+            throw new ParseException("Index out of bounds error: No more tokens");
+        }
+    }
+
+    /**
+     * Simple assertion helper used by the parser to record errors and abort parsing.
+     * Throws IndexOutOfBoundsException to match the existing parse method exception signatures.
+     */
+    private void expect(boolean condition, String message) throws ParseException {
+        if (!condition) {
+            this.error = message;
+            throw new IndexOutOfBoundsException(message);
+        }
+    }
+
+    public ASTBase parseProgram() throws ParseException {
+        throw new ParseException("Not Implemented");
+    }
 
     private boolean parseDeclOrStmt(Integer pos) {
         CFGNode curNode = DECL;
@@ -203,41 +175,6 @@ public class Parse {
         return false;
     }
 
-    private LexicalToken gobble() throws IndexOutOfBoundsException {
-        /*
-         * Advances the token position by one.
-         * Returns the current token before advancing.
-         */
-        if (this.pos < this.tokens.size() - 1) {
-            LexicalToken currentToken = this.tokens.get(this.pos);
-            this.pos++;
-            return currentToken;
-        } else {
-            throw new IndexOutOfBoundsException("No more tokens");
-        }
-    }
-    private LexicalToken lookahead() throws IndexOutOfBoundsException {
-        /*
-         * Precondition: to be called after gobble
-         */
-        if (this.pos < this.tokens.size()) {
-            return this.tokens.get(this.pos);
-        } else {
-            throw new IndexOutOfBoundsException("No more tokens");
-        }
-    }
-
-    /**
-     * Simple assertion helper used by the parser to record errors and abort parsing.
-     * Throws IndexOutOfBoundsException to match the existing parse method exception signatures.
-     */
-    private void expect(boolean condition, String message) throws ParseException {
-        if (!condition) {
-            this.error = message;
-            throw new IndexOutOfBoundsException(message);
-        }
-    }
-
     private boolean parseDecl(Integer pos, ASTBase parent) {
         return parseDeclOrStmt(pos);
     }
@@ -245,6 +182,10 @@ public class Parse {
     private boolean parseStmt(Integer pos, ASTBase parent) {
         return parseDeclOrStmt(pos);
     }
+
+    /*
+     * Methods for Expression parsing (Pratt)
+     */
 
     private class PrecedenceInfo {
         public int leftBindingPower;
@@ -506,9 +447,5 @@ public class Parse {
             return false;
         }
         return false;
-    }
-
-    public boolean getIsValidProgram() {
-        return this.tokens != null && this.error == null;
     }
 }

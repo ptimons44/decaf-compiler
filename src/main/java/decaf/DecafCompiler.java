@@ -24,12 +24,15 @@ public class DecafCompiler {
                 return;
             }
 
-            Parse parse = new Parse(scan.getTokens());
-            Boolean isValidProgram = parse.getIsValidProgram();
+            Parse parser = new Parse(scan.getTokens());
+            try {
+                parser.parseProgram();
+            } catch (ParseException e) {
+                // Parsing failed
+                System.out.println("Parsing failed: " + e.getMessage());
+                System.exit(1);
+            }
             if (CommandLineInterface.target == CompilerAction.PARSE) {
-                // parse.printErrors();
-                // parse.printWarnings();
-                System.out.println(isValidProgram ? "OK" : "ERR");
                 return;
             }
 

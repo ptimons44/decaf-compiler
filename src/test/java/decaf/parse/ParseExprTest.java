@@ -779,9 +779,6 @@ public class ParseExprTest extends ParseBaseTest {
         // For valid expressions, we should not get a ParseException
         assertDoesNotThrow(() -> parser.parseExpr(0), 
             "Valid expression should not throw ParseException");
-        
-        Boolean isValidProgram = parser.getIsValidProgram();
-        assertTrue(isValidProgram, "Expected valid expression to be parsed successfully.");
     }
 
     /*

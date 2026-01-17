@@ -6,6 +6,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import decaf.Parse;
+import decaf.ParseException;
 import decaf.types.LexicalToken;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -22,8 +23,7 @@ public class ParseDeclTest extends ParseBaseTest {
         assertNotNull(tokens);
         // Add your parsing logic here
         Parse parser = new Parse(tokens);
-        Boolean isValidProgram = parser.getIsValidProgram();
-        assertTrue(isValidProgram, "Expected valid declaration to be parsed successfully.");
+        assertDoesNotThrow(() -> parser.parseProgram(), "Parsing valid declaration should not throw an exception");
     }
 
     @ParameterizedTest
@@ -32,6 +32,8 @@ public class ParseDeclTest extends ParseBaseTest {
         // Test invalid variable declaration using token list
         assertNotNull(tokens);
         // Add your parsing logic that should fail
+        Parse parser = new Parse(tokens);
+        assertThrows(ParseException.class, () -> parser.parseProgram(), "Parsing invalid declaration should throw an exception");
     }
 
     static Stream<List<LexicalToken>> happyPathProvider() {
