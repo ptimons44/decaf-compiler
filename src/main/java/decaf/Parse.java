@@ -14,6 +14,14 @@ import java.util.stream.Collectors;
 import java.util.ArrayList;
 
 public class Parse {
+    private static final String START_INDEX_TOKEN = "[";
+    private static final String END_INDEX_TOKEN = "]";
+    private static final String START_FN_CALL_TOKEN = "(";
+    private static final String ARG_DELIMITER_TOKEN = ",";
+    private static final String END_FN_CALL_TOKEN = ")";
+    private static final String POSTFIX_INCREMENT_TOKEN = "++";
+    private static final String POSTFIX_DECREMENT_TOKEN = "--";
+
     private List<LexicalToken> tokens;
     private int pos = 0;
     private String error = null;
@@ -219,6 +227,17 @@ public class Parse {
         }
     }
 
+    /**
+     * Simple assertion helper used by the parser to record errors and abort parsing.
+     * Throws IndexOutOfBoundsException to match the existing parse method exception signatures.
+     */
+    private void expect(boolean condition, String message) throws ParseException {
+        if (!condition) {
+            this.error = message;
+            throw new IndexOutOfBoundsException(message);
+        }
+    }
+
     private boolean parseDecl(Integer pos, ASTBase parent) {
         return parseDeclOrStmt(pos);
     }
@@ -230,6 +249,7 @@ public class Parse {
     private class PrecedenceInfo {
         public int leftBindingPower;
         public int rightBindingPower;
+        public boolean isPostfix = false;
 
         public PrecedenceInfo(int leftBindingPower, int rightBindingPower) {
             this.leftBindingPower = leftBindingPower;
@@ -282,6 +302,11 @@ public class Parse {
                 case "--":
                     this.leftBindingPower = 7;
                     this.rightBindingPower = 7; // RIGHT: rbp = lbp
+                    this.isPostfix = true;
+                    break;
+                case "(":
+                case "[":
+                    this.isPostfix = true;
                     break;
                 default:
                     throw new IllegalArgumentException("Unknown operator: " + op);
@@ -289,11 +314,11 @@ public class Parse {
         }
     }
 
-    public ParseResult parseExpr(int startPos) throws IndexOutOfBoundsException {
+    public ParseResult parseExpr(int startPos) throws ParseException {
         return parseExpr(startPos, 0);
     }
 
-    public ParseResult parseExpr(int startPos, int precedence) throws IndexOutOfBoundsException {
+    public ParseResult parseExpr(int startPos, int precedence) throws ParseException {
         /*
          * Pre-conditions
          *   - startPos is within [0, tokens.size())
@@ -303,6 +328,7 @@ public class Parse {
          * Uses Pratt-style parsing to parse all subexpressions >= precedence.
          *   - The RHS of an operator must be parsed starting at the token after the operator, 
          *     with a strictly higher minimum binding power than the operator’s left binding power.
+         *   - An operator is postfix if it requires a fully-formed LHS before it can be recognized.
          * 
          * Post-conditions
          *   - [startPos, nextPos) forms a valid stand-alone expression
@@ -316,13 +342,14 @@ public class Parse {
         // assert getSyntacticEnv(this.tokens.get(startPos)) == SyntacticEnv.EXPR;
         assert precedence >= 0;
 
-        // parsing logic here
+        // parse prefix operators
         ParseResult prefixResult = parseExprPrefix(startPos);
         if (prefixResult == null) return null;
         int pos = prefixResult.nextPos;
         ASTBase root = prefixResult.tree; 
 
-        while (hasInfixOperator(pos)) {
+        // parse infix operators
+        while (hasInfixOrPostfixOperator(pos)) {
             /*
              * pos is always an operator token here
              */
@@ -333,22 +360,31 @@ public class Parse {
                 break;
             }
 
+            if (precInfo.isPostfix) {
+                ParseResult result = parseExprPostfix(root, pos);
+                root = result.tree;
+                pos = result.nextPos;
+                continue;
+            }
+
             pos++; // consume operator
+            
+            if (!precInfo.isPostfix) {
+                ParseResult result = parseExpr(pos, precInfo.rightBindingPower);
+                ASTBase right = result.tree;
+                if (right == null) return null;
+                pos = result.nextPos;
 
-            ParseResult result = parseExpr(pos, precInfo.rightBindingPower);
-            ASTBase right = result.tree;
-            if (right == null) return null;
-            pos = result.nextPos;
-
-            root = ASTExpr.binaryInfix(op).left(root).right(right).build();
+                root = ASTExpr.binaryInfix(op).left(root).right(right).build();
+            }
         }
-        
+
         // assert post-conditions
         assert true;
         return new ParseResult(root, pos);
     }
 
-    public ParseResult parseExprPrefix(int startPos) throws IndexOutOfBoundsException {
+    public ParseResult parseExprPrefix(int startPos) throws ParseException {
         LexicalToken token = this.tokens.get(startPos);
         if (token.getTokenType() == LexicalToken.TokenType.PUNCTUATION && token.getVal().equals("(")) {
             // parse parenthesized expression
@@ -373,27 +409,85 @@ public class Parse {
         return new ParseResult(root, pos);
     }
 
-    public boolean hasInfixOperator(int pos) {
+    public ParseResult parseExprPostfix(ASTBase left, int startPos) throws ParseException {
+        if (START_INDEX_TOKEN.equals(this.tokens.get(startPos).getVal())) {
+            // parse array indexing
+            ParseResult indexResult = parseExpr(startPos + 1, 0);
+            if (indexResult == null) return null;
+            int pos = indexResult.nextPos;
+
+            // expect closing bracket
+            expect(
+                END_INDEX_TOKEN.equals(this.tokens.get(pos).getVal()),
+                "Expected closing bracket at position " + pos
+            );
+
+            pos++; // consume ']'
+
+            ASTExpr tree = ASTExpr.arrayAccess()
+                .array(left)
+                .index(indexResult.tree)
+                .build();
+
+            return new ParseResult(tree, pos);
+        } else if (START_FN_CALL_TOKEN.equals(this.tokens.get(startPos).getVal())) {
+            throw new ParseException("Function call parsing not yet implemented");
+            // // parse function call
+            // int pos = startPos + 1;
+            // List<ASTBase> args = new ArrayList<>();
+
+            // while (pos < this.tokens.size() && 
+            //        !(this.tokens.get(pos).getTokenType() == LexicalToken.TokenType.PUNCTUATION && 
+            //          END_FN_CALL_TOKEN.equals(this.tokens.get(pos).getVal()))) {
+            //     ParseResult argResult = parseExpr(pos, 0);
+            //     if (argResult == null) return null;
+            //     args.add(argResult.tree);
+            //     pos = argResult.nextPos;
+
+            //     // check for argument delimiter
+            //     if (pos < this.tokens.size() && 
+            //         this.tokens.get(pos).getTokenType() == LexicalToken.TokenType.PUNCTUATION && 
+            //         ARG_DELIMITER_TOKEN.equals(this.tokens.get(pos).getVal())) {
+            //         pos++; // consume ','
+            //     }
+            // }
+
+            // expect closing parenthesis
+            // if (pos >= this.tokens.size() || 
+            //     !(this.tokens.get(pos).getTokenType() == LexicalToken.TokenType.PUNCTUATION && 
+            //       END_FN_CALL_TOKEN.equals(this.tokens.get(pos).getVal()))) {
+            //     this.error = "Expected closing parenthesis at position " + pos;
+            //     return null;
+            // }
+            // pos++; // consume ')'
+
+            // ASTBase fnCallNode = ASTExpr.functionCall()
+            //     .functionName(new ASTBase(this.tokens.get(startPos - 1))) // the function name
+        
+        } else if (POSTFIX_INCREMENT_TOKEN.equals(this.tokens.get(startPos).getVal()) ||
+                   POSTFIX_DECREMENT_TOKEN.equals(this.tokens.get(startPos).getVal())) {
+            throw new ParseException("Not Implemented");
+        }
+        else {
+            throw new ParseException("Unknown postfix operator: " + this.tokens.get(startPos).getVal());
+        }
+    }
+
+    public boolean hasInfixOrPostfixOperator(int pos) {
         /*
          * Returns true if there is a infix operator token at pos.
          */
         if (pos < this.tokens.size()) {
-            return isOperator(this.tokens.get(pos));
-        }
-        return false;
-    }
-
-    public boolean isOperator(LexicalToken token) {
-        /*
-         * Returns true if the token is an operator token.
-         */
-        if (token.getTokenType() == LexicalToken.TokenType.PUNCTUATION) {
-            String op = token.getVal();
-            Set<String> operators = Set.of(
-                "||", "&&", "==", "!=", "<", "<=", ">", ">=",
-                "+", "-", "*", "/", "%", "!", "++", "--"
-            );
-            return operators.contains(op);
+            LexicalToken token = this.tokens.get(pos);
+            if (token.getTokenType() == LexicalToken.TokenType.PUNCTUATION) {
+                String op = token.getVal();
+                Set<String> operators = Set.of(
+                    "||", "&&", "==", "!=", "<", "<=", ">", ">=",
+                    "+", "-", "*", "/", "%", "!", "++", "--", "(", "["
+                );
+                return operators.contains(op);
+            }
+            return false;
         }
         return false;
     }

@@ -7,6 +7,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import decaf.Parse;
 import decaf.Parse.ParseResult;
+import decaf.ParseException;
 import decaf.types.ASTBase;
 import decaf.types.ASTExpr;
 import decaf.types.LexicalToken;
@@ -17,6 +18,16 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public class ParseExprTest extends ParseBaseTest {
+
+    // Helper method to handle ParseException in structural tests
+    private ParseResult parseExprSafely(Parse parser, int startPos) {
+        try {
+            return parser.parseExpr(startPos);
+        } catch (ParseException e) {
+            fail("Unexpected ParseException: " + e.getMessage());
+            return null; // unreachable but helps with flow analysis
+        }
+    }
 
     /*
      * 1. Structural AST-shape tests (exact tree assertions)
@@ -34,7 +45,7 @@ public class ParseExprTest extends ParseBaseTest {
         );
 
         Parse parser = new Parse(tokens);
-        ParseResult result = parser.parseExpr(0);
+        ParseResult result = parseExprSafely(parser, 0);
         
         // Using the builder pattern for cleaner, more readable test construction
         ASTExpr expectedAST = ASTExpr.add()
@@ -79,9 +90,8 @@ public class ParseExprTest extends ParseBaseTest {
         );
 
         Parse parser = new Parse(tokens);
-        ParseResult result = parser.parseExpr(0);
+        ParseResult result = parseExprSafely(parser, 0);
         
-        // Using the builder pattern for cleaner, more readable test construction
         ASTExpr expectedAST = ASTExpr.subtract()
             .left(ASTExpr.subtract()
                 .left("a")
@@ -124,9 +134,8 @@ public class ParseExprTest extends ParseBaseTest {
         );
 
         Parse parser = new Parse(tokens);
-        ParseResult result = parser.parseExpr(0);
+        ParseResult result = parseExprSafely(parser, 0);
         
-        // Using the builder pattern for cleaner, more readable test construction
         ASTExpr expectedAST = ASTExpr.multiply()
             .left(ASTExpr.divide()
                 .left("a")
@@ -168,7 +177,7 @@ public class ParseExprTest extends ParseBaseTest {
         );
 
         Parse parser = new Parse(tokens);
-        ParseResult result = parser.parseExpr(0);
+        ParseResult result = parseExprSafely(parser, 0);
 
         // Using the builder pattern for cleaner, more readable test construction
         ASTExpr expectedAST = ASTExpr.add()
@@ -215,7 +224,7 @@ public class ParseExprTest extends ParseBaseTest {
         );
 
         Parse parser = new Parse(tokens);
-        ParseResult result = parser.parseExpr(0);
+        ParseResult result = parseExprSafely(parser, 0);
 
         // Using the builder pattern for cleaner, more readable test construction
         ASTExpr expectedAST = ASTExpr.add()
@@ -267,7 +276,7 @@ public class ParseExprTest extends ParseBaseTest {
         );
 
         Parse parser = new Parse(tokens);
-        ParseResult result = parser.parseExpr(0);
+        ParseResult result = parseExprSafely(parser, 0);
 
         // Using the builder pattern for cleaner, more readable test construction
         ASTExpr expectedAST = ASTExpr.subtract()
@@ -318,7 +327,7 @@ public class ParseExprTest extends ParseBaseTest {
         );
 
         Parse parser = new Parse(tokens);
-        ParseResult result = parser.parseExpr(0);
+        ParseResult result = parseExprSafely(parser, 0);
         
         ASTBase expectedAST = ASTExpr.leaf("a");
         ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
@@ -357,7 +366,7 @@ public class ParseExprTest extends ParseBaseTest {
         );
 
         Parse parser = new Parse(tokens);
-        ParseResult result = parser.parseExpr(0);
+        ParseResult result = parseExprSafely(parser, 0);
         
         ASTExpr expectedAST = ASTExpr.multiply()
             .left(ASTExpr.add()
@@ -402,7 +411,7 @@ public class ParseExprTest extends ParseBaseTest {
         );
 
         Parse parser = new Parse(tokens);
-        ParseResult result = parser.parseExpr(0);
+        ParseResult result = parseExprSafely(parser, 0);
         
         ASTExpr expectedAST = ASTExpr.add()
             .left("a")
@@ -446,7 +455,7 @@ public class ParseExprTest extends ParseBaseTest {
         );
 
         Parse parser = new Parse(tokens);
-        ParseResult result = parser.parseExpr(0);
+        ParseResult result = parseExprSafely(parser, 0);
         
         ASTExpr expectedAST = ASTExpr.divide()
             .left(ASTExpr.multiply()
@@ -491,7 +500,7 @@ public class ParseExprTest extends ParseBaseTest {
         );
 
         Parse parser = new Parse(tokens);
-        ParseResult result = parser.parseExpr(0);
+        ParseResult result = parseExprSafely(parser, 0);
         
         ASTExpr expectedAST = ASTExpr.methodCall()
             .function("a")
@@ -530,7 +539,7 @@ public class ParseExprTest extends ParseBaseTest {
         );
 
         Parse parser = new Parse(tokens);
-        ParseResult result = parser.parseExpr(0);
+        ParseResult result = parseExprSafely(parser, 0);
         
         ASTExpr expectedAST = ASTExpr.arrayAccess()
             .array("a")
@@ -565,9 +574,13 @@ public class ParseExprTest extends ParseBaseTest {
     @ParameterizedTest
     @MethodSource("happyPathProvider")
     public void testValidExpression(List<LexicalToken> tokens) {
-        // Test valid expression using token list
         assertNotNull(tokens);
         Parse parser = new Parse(tokens);
+        
+        // For valid expressions, we should not get a ParseException
+        assertDoesNotThrow(() -> parser.parseExpr(0), 
+            "Valid expression should not throw ParseException");
+        
         Boolean isValidProgram = parser.getIsValidProgram();
         assertTrue(isValidProgram, "Expected valid expression to be parsed successfully.");
     }
@@ -578,11 +591,19 @@ public class ParseExprTest extends ParseBaseTest {
     @ParameterizedTest
     @MethodSource("sadPathProvider")
     public void testInvalidExpression(List<LexicalToken> tokens) {
-        // Test invalid expression using token list
         assertNotNull(tokens);
         Parse parser = new Parse(tokens);
-        Boolean isValidProgram = parser.getIsValidProgram();
-        assertFalse(isValidProgram, "Expected invalid expression to fail parsing.");
+        
+        // For invalid expressions, we expect either a ParseException or invalid program state
+        try {
+            parser.parseExpr(0);
+            // If no exception was thrown, check that the program is marked as invalid
+            Boolean isValidProgram = parser.getIsValidProgram();
+            assertFalse(isValidProgram, "Expected invalid expression to fail parsing.");
+        } catch (ParseException e) {
+            // ParseException is expected for invalid expressions
+            assertTrue(true, "ParseException thrown as expected: " + e.getMessage());
+        }
     }
 
     static Stream<List<LexicalToken>> happyPathProvider() {
