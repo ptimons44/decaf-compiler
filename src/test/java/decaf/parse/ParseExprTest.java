@@ -567,6 +567,119 @@ public class ParseExprTest extends ParseBaseTest {
         );
     }
 
+    @Test
+    public void testArrayIndexPostfixWithExpr() {
+        List<LexicalToken> tokens = List.of(
+            id("array"),
+            punct("["),
+            id("a"),
+            op("*"),
+            punct("("),
+            id("b"),
+            op("+"),
+            id("c"),
+            punct(")"),
+            op("/"),
+            id("d"),
+            punct("]"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens);
+        ParseResult result = parseExprSafely(parser, 0);
+        
+        ASTExpr expectedAST = ASTExpr.arrayAccess()
+            .array("array")
+            .index(
+                ASTExpr.divide()
+                    .left(ASTExpr.multiply()
+                        .left("a")
+                        .right(ASTExpr.add()
+                            .left("b")
+                            .right("c")
+                            .build())
+                        .build())
+                    .right("d")
+                    .build()
+            )
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Expected nextPos: %d
+                Actual:
+                %s
+                Actual nextPos: %d
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
+                )
+        );
+    }
+
+    @Test
+    public void testArrayIndexPostfixRepeated() {
+        List<LexicalToken> tokens = List.of(
+            id("a"),
+            punct("["),
+            id("b"),
+            punct("]"),
+            punct("["),
+            id("c"),
+            punct("]"),
+            punct("["),
+            id("d"),
+            punct("]"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens);
+        ParseResult result = parseExprSafely(parser, 0);
+        
+        ASTExpr expectedAST = ASTExpr.arrayAccess()
+            .array(
+                ASTExpr.arrayAccess()
+                    .array(
+                        ASTExpr.arrayAccess()
+                            .array("a")
+                            .index("b")
+                            .build()
+                    )
+                    .index("c")
+                    .build()
+            )
+            .index("d")
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Expected nextPos: %d
+                Actual:
+                %s
+                Actual nextPos: %d
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
+                )
+        );
+    }
+
     /*
      * 2. Validity / acceptance tests (should parse)
      */
