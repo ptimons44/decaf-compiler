@@ -27,52 +27,52 @@ public class Parse {
      * Decl CFGNodes
      * 
      */
-    private static final CFGNode SEMICOLON_T = new CFGNode("SEMICOLON_T");
+    private static final CFGNode SEMICOLON_T = CFGNode.t("SEMICOLON");
 
-    private static final CFGNode DECL = new CFGNode("DECL", Map.of(
-        new CFGNode.LL1(LexicalToken.TokenType.KEYWORD, "import"), "IMPORT_DECL",
-        new CFGNode.LL1(LexicalToken.TokenType.KEYWORD, "int"), "VAR_DECL",
-        new CFGNode.LL1(LexicalToken.TokenType.KEYWORD, "long"), "VAR_DECL",
-        new CFGNode.LL1(LexicalToken.TokenType.KEYWORD, "bool"), "VAR_DECL"
-    ));
+    private static final CFGNode DECL = CFGNode.nt("DECL")
+        .rule("import", "IMPORT_DECL")
+        .rule("int", "VAR_DECL")
+        .rule("long", "VAR_DECL")
+        .rule("bool", "VAR_DECL")
+        .build();
 
-    private static final CFGNode IMPORT_DECL = new CFGNode("IMPORT_DECL", Map.of(
-        new CFGNode.LL1(LexicalToken.TokenType.KEYWORD, "import"), "IMPORT_SUF"
-    ));
+    private static final CFGNode IMPORT_DECL = CFGNode.nt("IMPORT_DECL")
+        .rule("import", "IMPORT_SUF")
+        .build();
 
-    private static final CFGNode IMPORT_SUF = new CFGNode("IMPORT_SUF", Map.of(
-        new CFGNode.LL1(LexicalToken.TokenType.IDENTIFIER, null), "IMPORT_SUF2" 
-    ));
+    private static final CFGNode IMPORT_SUF = CFGNode.nt("IMPORT_SUF")
+        .rule(LexicalToken.TokenType.IDENTIFIER, "IMPORT_SUF2")
+        .build();
 
-    private static final CFGNode IMPORT_SUF2 = new CFGNode("IMPORT_SUF", Map.of(
-        new CFGNode.LL1(LexicalToken.TokenType.PUNCTUATION, ";"), "SEMICOLON_T"
-    ));
+    private static final CFGNode IMPORT_SUF2 = CFGNode.nt("IMPORT_SUF2")
+        .rule(";", "SEMICOLON")
+        .build();
 
-    private static final CFGNode VAR_DECL = new CFGNode("VAR_DECL", Map.of(
-        new CFGNode.LL1(LexicalToken.TokenType.KEYWORD, "int"), "DECL_OR_ASMT",
-        new CFGNode.LL1(LexicalToken.TokenType.KEYWORD, "long"), "DECL_OR_ASMT",
-        new CFGNode.LL1(LexicalToken.TokenType.KEYWORD, "bool"), "DECL_OR_ASMT"
-    ));
+    private static final CFGNode VAR_DECL = CFGNode.nt("VAR_DECL")
+        .rule("int", "DECL_OR_ASMT")
+        .rule("long", "DECL_OR_ASMT")
+        .rule("bool", "DECL_OR_ASMT")
+        .build();
 
-    private static final CFGNode DECL_OR_ASMT = new CFGNode("DECL_OR_ASMT", Map.of(
-        new CFGNode.LL1(LexicalToken.TokenType.IDENTIFIER, null), "DECL_OR_ASMT_SUF"
-    ));
+    private static final CFGNode DECL_OR_ASMT = CFGNode.nt("DECL_OR_ASMT")
+        .rule(LexicalToken.TokenType.IDENTIFIER, "DECL_OR_ASMT_SUF")
+        .build();
 
-    private static final CFGNode DECL_OR_ASMT_SUF = new CFGNode("DECL_OR_ASMT_SUF", Map.of(
-        new CFGNode.LL1(LexicalToken.TokenType.PUNCTUATION, "="), "ASMT",
-        new CFGNode.LL1(LexicalToken.TokenType.PUNCTUATION, ";"), "SEMICOLON_T"
-    ));
+    private static final CFGNode DECL_OR_ASMT_SUF = CFGNode.nt("DECL_OR_ASMT_SUF")
+        .rule("=", "ASMT")
+        .rule(";", "SEMICOLON")
+        .build();
 
-    private static final CFGNode ASMT = new CFGNode("ASMT", Map.of(
-        new CFGNode.LL1(LexicalToken.TokenType.INTLITERAL, null), "ASMT_SUF",
-        new CFGNode.LL1(LexicalToken.TokenType.LONGLITERAL, null), "ASMT_SUF",
-        new CFGNode.LL1(LexicalToken.TokenType.STRINGLITERAL, null), "ASMT_SUF",
-        new CFGNode.LL1(LexicalToken.TokenType.BOOLEANLITERAL, null), "ASMT_SUF"
-    ));
+    private static final CFGNode ASMT = CFGNode.nt("ASMT")
+        .rule(LexicalToken.TokenType.INTLITERAL, "ASMT_SUF")
+        .rule(LexicalToken.TokenType.LONGLITERAL, "ASMT_SUF")
+        .rule(LexicalToken.TokenType.STRINGLITERAL, "ASMT_SUF")
+        .rule(LexicalToken.TokenType.BOOLEANLITERAL, "ASMT_SUF")
+        .build();
 
-    private static final CFGNode ASMT_SUF = new CFGNode("ASMT_SUF", Map.of(
-        new CFGNode.LL1(LexicalToken.TokenType.PUNCTUATION, ";"), "SEMICOLON_T"
-    ));
+    private static final CFGNode ASMT_SUF = CFGNode.nt("ASMT_SUF")
+        .rule(";", "SEMICOLON")
+        .build();
 
     /*
      * 
@@ -154,11 +154,11 @@ public class Parse {
         throw new ParseException("Not Implemented");
     }
 
-    private boolean parseDeclOrStmt(Integer pos) {
+    private boolean parseDeclOrStmt(Integer pos) throws ParseException {
         CFGNode curNode = DECL;
-        CFGNode.LL1 ll1;
+        LexicalToken ll1;
         while (pos < tokens.size()) {
-            ll1 = new CFGNode.LL1(tokens.get(pos).getTokenType(), tokens.get(pos).getVal());
+            ll1 = tokens.get(pos);
             CFGNode nextNode = curNode.matchLL1(ll1);
             curNode = nextNode;
             pos++;
@@ -175,11 +175,11 @@ public class Parse {
         return false;
     }
 
-    private boolean parseDecl(Integer pos, ASTBase parent) {
+    private boolean parseDecl(Integer pos, ASTBase parent) throws ParseException {
         return parseDeclOrStmt(pos);
     }
 
-    private boolean parseStmt(Integer pos, ASTBase parent) {
+    private boolean parseStmt(Integer pos, ASTBase parent) throws ParseException {
         return parseDeclOrStmt(pos);
     }
 
