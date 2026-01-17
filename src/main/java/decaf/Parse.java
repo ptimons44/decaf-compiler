@@ -24,11 +24,17 @@ public class Parse {
 
     /*
      * 
-     * Decl CFGNodes
+     * Decl CFGNodes - Organized top-down
      * 
      */
-    private static final CFGNode SEMICOLON_T = CFGNode.t("SEMICOLON");
 
+    // Top-level program structure
+    private static final CFGNode PROGRAM = CFGNode.nt("PROGRAM")
+        .rule("DECL", "PROGRAM")
+        .rule("EOF", "EOF")
+        .build();
+
+    // High-level declarations
     private static final CFGNode DECL = CFGNode.nt("DECL")
         .rule("import", "IMPORT_DECL")
         .rule("int", "VAR_DECL")
@@ -36,6 +42,7 @@ public class Parse {
         .rule("bool", "VAR_DECL")
         .build();
 
+    // Import declaration hierarchy
     private static final CFGNode IMPORT_DECL = CFGNode.nt("IMPORT_DECL")
         .rule("import", "IMPORT_SUF")
         .build();
@@ -45,9 +52,10 @@ public class Parse {
         .build();
 
     private static final CFGNode IMPORT_SUF2 = CFGNode.nt("IMPORT_SUF2")
-        .rule(";", "SEMICOLON")
+        .rule(";", "END_STMT")
         .build();
 
+    // Variable declaration hierarchy
     private static final CFGNode VAR_DECL = CFGNode.nt("VAR_DECL")
         .rule("int", "DECL_OR_ASMT")
         .rule("long", "DECL_OR_ASMT")
@@ -60,9 +68,10 @@ public class Parse {
 
     private static final CFGNode DECL_OR_ASMT_SUF = CFGNode.nt("DECL_OR_ASMT_SUF")
         .rule("=", "ASMT")
-        .rule(";", "SEMICOLON")
+        .rule(";", "END_STMT")
         .build();
 
+    // Assignment hierarchy
     private static final CFGNode ASMT = CFGNode.nt("ASMT")
         .rule(LexicalToken.TokenType.INTLITERAL, "ASMT_SUF")
         .rule(LexicalToken.TokenType.LONGLITERAL, "ASMT_SUF")
@@ -71,8 +80,11 @@ public class Parse {
         .build();
 
     private static final CFGNode ASMT_SUF = CFGNode.nt("ASMT_SUF")
-        .rule(";", "SEMICOLON")
+        .rule(";", "END_STMT")
         .build();
+
+    // Terminal nodes
+    private static final CFGNode END_STMT = CFGNode.t("END_STMT");
 
     /*
      * 
@@ -154,7 +166,7 @@ public class Parse {
         throw new ParseException("Not Implemented");
     }
 
-    private boolean parseDeclOrStmt(Integer pos) throws ParseException {
+    public ParseResult parseDeclOrStmt(CFGNode left, Integer pos) throws ParseException {
         CFGNode curNode = DECL;
         LexicalToken ll1;
         while (pos < tokens.size()) {
@@ -163,23 +175,18 @@ public class Parse {
             curNode = nextNode;
             pos++;
 
-            if (nextNode == null) {
-                this.error = "Unable to match lookahead token " + ll1.toString() +
-                             " in declaration parsing at token position " + pos;
-                return false;
-            }
-            else if (nextNode.isTerminal()) {
-                return true;
+            if (nextNode.isTerminal()) {
+                return new ParseResult(null, pos);
             }
         }
         return false;
     }
 
-    private boolean parseDecl(Integer pos, ASTBase parent) throws ParseException {
+    public ParseResult parseDecl(Integer pos, ASTBase parent) throws ParseException {
         return parseDeclOrStmt(pos);
     }
 
-    private boolean parseStmt(Integer pos, ASTBase parent) throws ParseException {
+    public ParseResult parseStmt(Integer pos, ASTBase parent) throws ParseException {
         return parseDeclOrStmt(pos);
     }
 
