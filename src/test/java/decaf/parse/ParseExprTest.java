@@ -794,15 +794,7 @@ public class ParseExprTest extends ParseBaseTest {
         Parse parser = new Parse(tokens);
         
         // For invalid expressions, we expect either a ParseException or invalid program state
-        try {
-            parser.parseExpr(0);
-            // If no exception was thrown, check that the program is marked as invalid
-            Boolean isValidProgram = parser.getIsValidProgram();
-            assertFalse(isValidProgram, "Expected invalid expression to fail parsing.");
-        } catch (ParseException e) {
-            // ParseException is expected for invalid expressions
-            assertTrue(true, "ParseException thrown as expected: " + e.getMessage());
-        }
+        assertThrows(ParseException.class, () -> parser.parseExpr(0));
     }
 
     static Stream<List<LexicalToken>> happyPathProvider() {

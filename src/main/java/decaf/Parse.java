@@ -435,7 +435,8 @@ public class Parse {
             int pos = startPos + 1;
             List<ASTBase> args = new ArrayList<>();
 
-            while (pos+1 < this.tokens.size()) {
+            while (pos+1 < this.tokens.size() && 
+                   !END_FN_CALL_TOKEN.equals(this.tokens.get(pos).getVal())) {
                 ParseResult argResult = parseExpr(pos, 0);
                 if (argResult == null) return null;
                 args.add(argResult.tree);
