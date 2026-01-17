@@ -431,38 +431,36 @@ public class Parse {
 
             return new ParseResult(tree, pos);
         } else if (START_FN_CALL_TOKEN.equals(this.tokens.get(startPos).getVal())) {
-            throw new ParseException("Function call parsing not yet implemented");
-            // // parse function call
-            // int pos = startPos + 1;
-            // List<ASTBase> args = new ArrayList<>();
+            // parse function call
+            int pos = startPos + 1;
+            List<ASTBase> args = new ArrayList<>();
 
-            // while (pos < this.tokens.size() && 
-            //        !(this.tokens.get(pos).getTokenType() == LexicalToken.TokenType.PUNCTUATION && 
-            //          END_FN_CALL_TOKEN.equals(this.tokens.get(pos).getVal()))) {
-            //     ParseResult argResult = parseExpr(pos, 0);
-            //     if (argResult == null) return null;
-            //     args.add(argResult.tree);
-            //     pos = argResult.nextPos;
+            while (pos+1 < this.tokens.size()) {
+                ParseResult argResult = parseExpr(pos, 0);
+                if (argResult == null) return null;
+                args.add(argResult.tree);
+                pos = argResult.nextPos;
 
-            //     // check for argument delimiter
-            //     if (pos < this.tokens.size() && 
-            //         this.tokens.get(pos).getTokenType() == LexicalToken.TokenType.PUNCTUATION && 
-            //         ARG_DELIMITER_TOKEN.equals(this.tokens.get(pos).getVal())) {
-            //         pos++; // consume ','
-            //     }
-            // }
+                // check for argument delimiter
+                if (!ARG_DELIMITER_TOKEN.equals(this.tokens.get(pos).getVal())) {
+                    break;
+                }
+                pos++; // consume ','
+            }
 
-            // expect closing parenthesis
-            // if (pos >= this.tokens.size() || 
-            //     !(this.tokens.get(pos).getTokenType() == LexicalToken.TokenType.PUNCTUATION && 
-            //       END_FN_CALL_TOKEN.equals(this.tokens.get(pos).getVal()))) {
-            //     this.error = "Expected closing parenthesis at position " + pos;
-            //     return null;
-            // }
-            // pos++; // consume ')'
+            expect(
+                END_FN_CALL_TOKEN.equals(this.tokens.get(pos).getVal()),
+                "Expected closing parenthesis at position " + pos
+            );
 
-            // ASTBase fnCallNode = ASTExpr.functionCall()
-            //     .functionName(new ASTBase(this.tokens.get(startPos - 1))) // the function name
+            pos++; // consume ')'
+
+            ASTExpr tree = ASTExpr.methodCall()
+                .function(left)
+                .arguments(args)
+                .build();
+
+            return new ParseResult(tree, pos);
         
         } else if (POSTFIX_INCREMENT_TOKEN.equals(this.tokens.get(startPos).getVal()) ||
                    POSTFIX_DECREMENT_TOKEN.equals(this.tokens.get(startPos).getVal())) {

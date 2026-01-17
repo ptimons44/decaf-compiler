@@ -121,6 +121,17 @@ public class ASTExpr extends ASTBase {
         public Builder argument(String identifier) {
             return argument(new LexicalToken(LexicalToken.TokenType.IDENTIFIER, identifier, 0, 0));
         }
+
+        // Add multiple arguments at once
+        public Builder arguments(List<ASTBase> arguments) {
+            if (arity != Arity.UNBOUNDED) {
+                throw new IllegalStateException("arguments() can only be used with method calls");
+            }
+            for (ASTBase arg : arguments) {
+                operand(arg);
+            }
+            return this;
+        }
         
         // For binary operations - more intuitive naming
         public Builder left(ASTBase left) {

@@ -490,6 +490,92 @@ public class ParseExprTest extends ParseBaseTest {
     }
 
     @Test
+    public void testMethodCallPostfixMultipleArgs() {
+        List<LexicalToken> tokens = List.of(
+            id("a"),
+            punct("("),
+            id("b"),
+            punct(","),
+            id("c"),
+            punct(","),
+            id("d"),
+            punct(")"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens);
+        ParseResult result = parseExprSafely(parser, 0);
+        
+        ASTExpr expectedAST = ASTExpr.methodCall()
+            .function("a")
+            .argument("b")
+            .argument("c")
+            .argument("d")
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Expected nextPos: %d
+                Actual:
+                %s
+                Actual nextPos: %d
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
+                )
+        );
+    }
+
+    @Test
+    public void testMethodCallExprArgsSimple() {
+        List<LexicalToken> tokens = List.of(
+            id("fn"),
+            punct("("),
+            punct("("),
+            id("a"),
+            punct(")"),
+            punct(")"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens);
+        ParseResult result = parseExprSafely(parser, 0);
+        
+        ASTExpr expectedAST = ASTExpr.methodCall()
+            .function("fn")
+            .argument("a")
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Expected nextPos: %d
+                Actual:
+                %s
+                Actual nextPos: %d
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
+                )
+        );
+    }
+
+    @Test
     public void testMethodCallPostfix() {
         List<LexicalToken> tokens = List.of(
             id("a"),
