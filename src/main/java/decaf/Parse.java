@@ -46,6 +46,7 @@ public class Parse {
         // Import declaration hierarchy
         CFGNode.nt("IMPORT_DECL_0")
             .rule("import", "IMPORT_DECL_1")
+            .rule("EOF", "EOF")
             .build();
 
         CFGNode.nt("IMPORT_DECL_1")
@@ -62,6 +63,7 @@ public class Parse {
             .rule("long", "MEMBER_DECL_1")
             .rule("bool", "MEMBER_DECL_1")
             .rule("void", "METHOD_DECL_1")
+            .rule("EOF", "EOF")
             .build();
 
         CFGNode.nt("MEMBER_DECL_1")
@@ -104,6 +106,7 @@ public class Parse {
             .rule("long", "METHOD_DECL_1")
             .rule("bool", "METHOD_DECL_1")
             .rule("void", "METHOD_DECL_1")
+            .rule("EOF", "EOF")
             .build();
 
         CFGNode.nt("METHOD_DECL_1")
