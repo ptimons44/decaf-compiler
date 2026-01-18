@@ -7,18 +7,17 @@ import decaf.ParseException;
 import lombok.Getter;
 
 public class CFGNode {
-    private static final String TYPE_SUFFIX = "_TYPE";
-    private static final String VAL_SUFFIX = "_VAL";
-
     static Map<String, CFGNode> nodeMap = new HashMap<>();
 
     @Getter private String name;
     @Getter private boolean isTerminal;
     /*
      * Lookahead can be the string value of the token or the token type
-     * every lookahead in transitions map should have either _VAL or _TYPE suffix
      */
-    private Map<String, String> transitions;
+    sealed interface LookaheadKey permits TokenValue, TokenTypeKey {}
+    record TokenValue(String value) implements LookaheadKey {}
+    record TokenTypeKey(LexicalToken.TokenType type) implements LookaheadKey {}
+    private Map<LookaheadKey, String> transitions;
 
     private CFGNode(String name) {
         assert !nodeMap.containsKey(name) : "CFGNode with name '" + name + "' already exists";
@@ -27,7 +26,7 @@ public class CFGNode {
         this.isTerminal = true;
     }
 
-    private CFGNode(String name, Map<String, String> transitions) {
+    private CFGNode(String name, Map<LookaheadKey, String> transitions) {
         assert !nodeMap.containsKey(name) : "CFGNode with name '" + name + "' already exists";
         this.name = name;
         this.nodeMap.put(name, this); // static map of all nodes
@@ -36,25 +35,14 @@ public class CFGNode {
     }
 
     public CFGNode matchLL1(LexicalToken ll1) throws ParseException {
-        String nextNodeName;
-        String key;
+        String next =
+        transitions.getOrDefault(new TokenValue(ll1.getVal()),
+        transitions.get(new TokenTypeKey(ll1.getTokenType())));
 
-        // first match by exact token value
-        key = ll1.getVal() + VAL_SUFFIX;
-        if (this.transitions.containsKey(key)) {
-            nextNodeName = this.transitions.get(key);
-            return nodeMap.get(nextNodeName);
+        if (next == null) {
+            throw new ParseException("No transition from " + name + " on " + ll1.toString());
         }
-
-        // second match by token type
-        key = ll1.getTokenType().toString() + TYPE_SUFFIX;
-        if (this.transitions.containsKey(key)) {
-            nextNodeName = this.transitions.get(key);
-            return nodeMap.get(nextNodeName);
-        }
-
-        // no match
-        throw new ParseException("No matching transition for lookahead: " + ll1);
+        return nodeMap.get(next);
      }
     
     public boolean isExpr() {
@@ -72,23 +60,36 @@ public class CFGNode {
 
     public static class CFGNodeBuilder {
         private String name;
-        private Map<String, String> transitions = new HashMap<>();
+        private Map<LookaheadKey, String> transitions = new HashMap<>();
 
         private CFGNodeBuilder(String name) {
             this.name = name;
         }
 
         public CFGNodeBuilder rule(String lookahead, String targetNodeName) {
-            transitions.put(lookahead + VAL_SUFFIX, targetNodeName);
+            transitions.put(new TokenValue(lookahead), targetNodeName);
             return this;
         }
 
         public CFGNodeBuilder rule(LexicalToken.TokenType lookahead, String targetNodeName) {
-            transitions.put(lookahead.toString() + TYPE_SUFFIX, targetNodeName);
+            transitions.put(new TokenTypeKey(lookahead), targetNodeName);
             return this;
         }
 
         public CFGNode build() {
+            for (LookaheadKey k : transitions.keySet()) {
+                if (k instanceof TokenValue v) {
+                    LexicalToken.TokenType t = LexicalToken.inferTokenType(v.value());
+                    if (transitions.containsKey(new TokenTypeKey(t))) {
+                        throw new IllegalStateException(
+                            "LL(1) conflict in " + name +
+                            ": value '" + v.value() +
+                            "' conflicts with type " + t
+                        );
+                    }
+                }
+            }
+
             return new CFGNode(name, transitions);
         }
     }

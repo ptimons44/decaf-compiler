@@ -118,7 +118,7 @@ public class Parse {
             .build();
 
         CFGNode.nt("METHOD_ARG_1")  
-            .rule(")", "METHOD_DECL_4")
+            .rule(")", "BLOCK_1")
             .build();
 
         CFGNode.nt("METHOD_ARG_2")
@@ -133,7 +133,7 @@ public class Parse {
         
         CFGNode.nt("METHOD_ARG_4")
             .rule(",", "METHOD_ARG_1")
-            .rule(")", "METHOD_DECL_4")
+            .rule(")", "BLOCK_1")
             .build();
 
         CFGNode.nt("METHOD_DECL_3")
@@ -143,18 +143,22 @@ public class Parse {
         CFGNode.nt("BLOCK_1")
             .rule("{", "BLOCK_2")
             .build();
-
+        
         CFGNode.nt("BLOCK_2")
-            .rule("}", "METHOD_DECL_0")
+            // TODO
+            .build();
+        
+        CFGNode.nt("BLOCK_FIELD_DECL_1")
+            // TODO
+            .build();
+        
+        CFGNode.nt("BLOCK_METHOD_DECL_1")
+            // TODO
             .build();
 
-        /*
-        * 
-        * Stmt CFGNodes
-        * 
-        */
-
-        // TODO: write out statement CFGNodes
+        CFGNode.nt("BLOCK_N")
+            .rule("}", "METHOD_DECL_0")
+            .build();
 
         CFGNode.t("EOF");
 }

@@ -40,4 +40,25 @@ public class LexicalToken {
     public int hashCode() {
         return java.util.Objects.hash(tokenType, val);
     }
+
+    private static final java.util.Set<String> keywords = java.util.Set.of(
+        "if", "bool", "break", "import", "continue", "else", "false", 
+        "for", "while", "int", "long", "return", "len", "true", "void"
+    );
+
+    public static TokenType inferTokenType(String val) {
+        if (val.matches("^[0-9]+$")) {
+            return TokenType.INTLITERAL;
+        } else if (val.matches("^[0-9]+L$")) {
+            return TokenType.LONGLITERAL;
+        } else if (val.matches("^\".*\"$")) {
+            return TokenType.STRINGLITERAL;
+        } else if (val.matches("^(true|false)$")) {
+            return TokenType.BOOLEANLITERAL;
+        } else if (keywords.contains(val)) {
+            return TokenType.KEYWORD;
+        } {
+            return TokenType.IDENTIFIER;
+        }
+    }
 }
