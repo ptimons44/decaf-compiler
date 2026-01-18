@@ -1,6 +1,7 @@
 package decaf;
 
 import decaf.types.LexicalToken;
+import decaf.types.LexicalToken.TokenType;
 import lombok.AllArgsConstructor;
 import decaf.types.ASTBase;
 import decaf.types.ASTExpr;
@@ -27,71 +28,108 @@ public class Parse {
      * Decl CFGNodes - Organized top-down
      * 
      */
+    static {
+        // keep pointer to PROGRAM to avoid GC
+        final CFGNode PROGRAM = CFGNode.nt("PROGRAM")
+            .rule("import", "IMPORT_DECL_1")
+            
+            .rule("int", "MEMBER_DECL_1")
+            .rule("long", "MEMBER_DECL_1")
+            .rule("bool", "MEMBER_DECL_1")
 
-    // Top-level program structure
-    private static final CFGNode PROGRAM = CFGNode.nt("PROGRAM")
-        .rule("DECL", "PROGRAM")
-        .rule("EOF", "EOF")
-        .build();
+            .rule("void", "METHOD_DECL_1")
 
-    // High-level declarations
-    private static final CFGNode DECL = CFGNode.nt("DECL")
-        .rule("import", "IMPORT_DECL")
-        .rule("int", "VAR_DECL")
-        .rule("long", "VAR_DECL")
-        .rule("bool", "VAR_DECL")
-        .build();
+            .rule("EOF", "EOF")
+            .build();
+            
+        // Import declaration hierarchy
+        CFGNode.nt("IMPORT_DECL_0")
+            .rule("import", "IMPORT_DECL_1")
+            .build();
 
-    // Import declaration hierarchy
-    private static final CFGNode IMPORT_DECL = CFGNode.nt("IMPORT_DECL")
-        .rule("import", "IMPORT_SUF")
-        .build();
+        CFGNode.nt("IMPORT_DECL_1")
+            .rule(LexicalToken.TokenType.IDENTIFIER, "IMPORT_DECL_2")
+            .build();
 
-    private static final CFGNode IMPORT_SUF = CFGNode.nt("IMPORT_SUF")
-        .rule(LexicalToken.TokenType.IDENTIFIER, "IMPORT_SUF2")
-        .build();
+        CFGNode.nt("IMPORT_DECL_2")
+            .rule(";", "IMPORT_DECL_0") // unlimited import declarations permissible
+            .build();
+        
+        // Member (field, array_field, or method) declaration hierarchy
+        CFGNode.nt("MEMBER_DECL_0")
+            .rule("int", "MEMBER_DECL_1")
+            .rule("long", "MEMBER_DECL_1")
+            .rule("bool", "MEMBER_DECL_1")
+            .rule("void", "METHOD_DECL_1")
+            .build();
 
-    private static final CFGNode IMPORT_SUF2 = CFGNode.nt("IMPORT_SUF2")
-        .rule(";", "END_STMT")
-        .build();
+        CFGNode.nt("MEMBER_DECL_1")
+            .rule("[", "ARRAY_FIELD_DECL_1")
+            .rule(TokenType.IDENTIFIER, "MEMBER_DECL_2")
+            .build();
 
-    // Variable declaration hierarchy
-    private static final CFGNode VAR_DECL = CFGNode.nt("VAR_DECL")
-        .rule("int", "DECL_OR_ASMT")
-        .rule("long", "DECL_OR_ASMT")
-        .rule("bool", "DECL_OR_ASMT")
-        .build();
+        CFGNode.nt("ARRAY_FIELD_DECL_1")
+            .rule(TokenType.INTLITERAL, "ARRAY_FIELD_DECL_2")
+            .build();
+        
+        CFGNode.nt("ARRAY_FIELD_DECL_2")
+            .rule("]", "ARRAY_FIELD_DECL_2")
+            // TODO: allow repeated FIELD decls on same line
+            .build();
+        
+        CFGNode.nt("MEMBER_DECL_2")
+            .rule("(", "METHOD_DECL_1")
+            .rule(";", "MEMBER_DECL_0")
+            .build();
 
-    private static final CFGNode DECL_OR_ASMT = CFGNode.nt("DECL_OR_ASMT")
-        .rule(LexicalToken.TokenType.IDENTIFIER, "DECL_OR_ASMT_SUF")
-        .build();
+        // Method declaration hierarchy
+        CFGNode.nt("METHOD_DECL_1")
+            .rule(LexicalToken.TokenType.IDENTIFIER, "METHOD_DECL_2")
+            .build();
 
-    private static final CFGNode DECL_OR_ASMT_SUF = CFGNode.nt("DECL_OR_ASMT_SUF")
-        .rule("=", "ASMT")
-        .rule(";", "END_STMT")
-        .build();
+        CFGNode.nt("METHOD_DECL_2")
+            .rule("(", "METHOD_ARG_1")
+            .build();
 
-    // Assignment hierarchy
-    private static final CFGNode ASMT = CFGNode.nt("ASMT")
-        .rule(LexicalToken.TokenType.INTLITERAL, "ASMT_SUF")
-        .rule(LexicalToken.TokenType.LONGLITERAL, "ASMT_SUF")
-        .rule(LexicalToken.TokenType.STRINGLITERAL, "ASMT_SUF")
-        .rule(LexicalToken.TokenType.BOOLEANLITERAL, "ASMT_SUF")
-        .build();
+        CFGNode.nt("METHOD_ARG_1")  
+            .rule(")", "METHOD_DECL_4")
+            .build();
 
-    private static final CFGNode ASMT_SUF = CFGNode.nt("ASMT_SUF")
-        .rule(";", "END_STMT")
-        .build();
+        CFGNode.nt("METHOD_ARG_2")
+            .rule("int", "METHOD_ARG_3")
+            .rule("long", "METHOD_ARG_3")
+            .rule("bool", "METHOD_ARG_3")
+            .build();
+        
+        CFGNode.nt("METHOD_ARG_3")
+            .rule(TokenType.IDENTIFIER, "METHOD_ARG_4")
+            .build();
+        
+        CFGNode.nt("METHOD_ARG_4")
+            .rule(",", "METHOD_ARG_1")
+            .rule(")", "METHOD_DECL_4")
+            .build();
 
-    // Terminal nodes
-    private static final CFGNode END_STMT = CFGNode.t("END_STMT");
+        CFGNode.nt("METHOD_DECL_3")
+            .rule(")", "METHOD_DECL_4")
+            .build();
 
-    /*
-     * 
-     * Stmt CFGNodes
-     * 
-     */
-    // TODO: write out statement CFGNodes
+        CFGNode.nt("METHOD_DECL_4")
+            .rule("{", "METHOD_BODY")
+            .build();
+
+        CFGNode.nt("METHOD_BODY")
+            .rule("}", "END_STMT")
+            .build();
+
+        /*
+        * 
+        * Stmt CFGNodes
+        * 
+        */
+
+        // TODO: write out statement CFGNodes
+}
 
     private List<LexicalToken> tokens;
     private int pos = 0;
@@ -167,7 +205,7 @@ public class Parse {
     }
 
     public ParseResult parseDeclOrStmt(CFGNode left, Integer pos) throws ParseException {
-        CFGNode curNode = DECL;
+        CFGNode curNode = null; // TODO: initialize
         LexicalToken ll1;
         while (pos < tokens.size()) {
             ll1 = tokens.get(pos);
@@ -179,15 +217,15 @@ public class Parse {
                 return new ParseResult(null, pos);
             }
         }
-        return false;
+        throw new ParseException("Failed to parse declaration or statement");
     }
 
     public ParseResult parseDecl(Integer pos, ASTBase parent) throws ParseException {
-        return parseDeclOrStmt(pos);
+        return parseDeclOrStmt(null, pos);
     }
 
     public ParseResult parseStmt(Integer pos, ASTBase parent) throws ParseException {
-        return parseDeclOrStmt(pos);
+        return parseDeclOrStmt(null, pos);
     }
 
     /*
