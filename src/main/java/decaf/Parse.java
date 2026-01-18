@@ -28,9 +28,10 @@ public class Parse {
      * Decl CFGNodes - Organized top-down
      * 
      */
+    static final CFGNode PROGRAM;
     static {
         // keep pointer to PROGRAM to avoid GC
-        final CFGNode PROGRAM = CFGNode.nt("PROGRAM")
+        PROGRAM = CFGNode.nt("PROGRAM")
             .rule("import", "IMPORT_DECL_1")
             
             .rule("int", "MEMBER_DECL_1")
@@ -201,23 +202,26 @@ public class Parse {
     }
 
     public ASTBase parseProgram() throws ParseException {
-        throw new ParseException("Not Implemented");
+        ParseResult result = parseDeclOrStmt(this.PROGRAM, 0);
+        expect(result.nextPos == tokens.size() - 1, "Did not reach end of token stream after parsing program");
+        return result.tree;
     }
 
     public ParseResult parseDeclOrStmt(CFGNode left, Integer pos) throws ParseException {
-        CFGNode curNode = null; // TODO: initialize
+        CFGNode curNode = left;
         LexicalToken ll1;
         while (pos < tokens.size()) {
             ll1 = tokens.get(pos);
             CFGNode nextNode = curNode.matchLL1(ll1);
-            curNode = nextNode;
-            pos++;
-
-            if (nextNode.isTerminal()) {
-                return new ParseResult(null, pos);
+            if (nextNode.isExpr()) {
+                ParseResult exprResult = parseExpr(pos);
+                pos = exprResult.nextPos;
+            } else {
+                curNode = nextNode;
+                pos++;
             }
         }
-        throw new ParseException("Failed to parse declaration or statement");
+        return new ParseResult(null, pos);
     }
 
     public ParseResult parseDecl(Integer pos, ASTBase parent) throws ParseException {

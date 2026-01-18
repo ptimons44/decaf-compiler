@@ -53,6 +53,10 @@ public class CFGNode {
         // no match
         throw new ParseException("No matching transition for lookahead: " + ll1);
      }
+    
+    public boolean isExpr() {
+        return this.name.equals("EXPR");
+    }
 
     // Builder methods
     public static CFGNode t(String name) {
