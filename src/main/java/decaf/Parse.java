@@ -155,6 +155,8 @@ public class Parse {
         */
 
         // TODO: write out statement CFGNodes
+
+        CFGNode.t("EOF");
 }
 
     private List<LexicalToken> tokens;
@@ -228,7 +230,7 @@ public class Parse {
 
     public ASTBase parseProgram() throws ParseException {
         ParseResult result = parseDeclOrStmt(this.PROGRAM, 0);
-        expect(result.nextPos == tokens.size() - 1, "Did not reach end of token stream after parsing program");
+        expect(result.nextPos == tokens.size(), "Did not reach end of token stream after parsing program");
         return result.tree;
     }
 

@@ -37,16 +37,19 @@ public class CFGNode {
 
     public CFGNode matchLL1(LexicalToken ll1) throws ParseException {
         String nextNodeName;
+        String key;
 
         // first match by exact token value
-        if (this.transitions.containsKey(ll1.getVal() + VAL_SUFFIX)) {
-            nextNodeName = this.transitions.get(ll1.getVal() + VAL_SUFFIX);
+        key = ll1.getVal() + VAL_SUFFIX;
+        if (this.transitions.containsKey(key)) {
+            nextNodeName = this.transitions.get(key);
             return nodeMap.get(nextNodeName);
         }
 
         // second match by token type
-        if (this.transitions.containsKey(ll1.getVal() + TYPE_SUFFIX)) {
-            nextNodeName = this.transitions.get(ll1.getVal() + TYPE_SUFFIX);
+        key = ll1.getTokenType().toString() + TYPE_SUFFIX;
+        if (this.transitions.containsKey(key)) {
+            nextNodeName = this.transitions.get(key);
             return nodeMap.get(nextNodeName);
         }
 
@@ -81,7 +84,7 @@ public class CFGNode {
         }
 
         public CFGNodeBuilder rule(LexicalToken.TokenType lookahead, String targetNodeName) {
-            transitions.put(lookahead + TYPE_SUFFIX, targetNodeName);
+            transitions.put(lookahead.toString() + TYPE_SUFFIX, targetNodeName);
             return this;
         }
 

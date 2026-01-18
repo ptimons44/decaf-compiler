@@ -6,10 +6,16 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import decaf.DirectorySource;
+import decaf.Parse;
+import decaf.Scan;
 import decaf.types.LexicalToken;
+import decaf.utils.CommandLineInterface;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -53,6 +59,11 @@ public class ParseBaseTest {
     @ParameterizedTest
     @DirectorySource("src/test/public-tests/phase1-parser/public/legal") // directory A
     public void testGoodProgramCompilesSucessfully(String in) {
-        System.out.println("testing file " + in);
+        Scan scan = new Scan(in);
+        scan.scan();
+        List<LexicalToken> tokens = scan.getTokens();
+        assertNotNull(tokens);
+        Parse parser = new Parse(tokens);
+        assertDoesNotThrow(() -> parser.parseProgram());
     }
 }
