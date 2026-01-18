@@ -65,8 +65,24 @@ public class Parse {
             .build();
 
         CFGNode.nt("MEMBER_DECL_1")
-            .rule("[", "ARRAY_FIELD_DECL_1")
             .rule(TokenType.IDENTIFIER, "MEMBER_DECL_2")
+            .build();
+        
+        CFGNode.nt("MEMBER_DECL_2")
+            .rule("(", "METHOD_DECL_1")
+            .rule("[", "ARRAY_FIELD_DECL_1")
+            .rule(",", "MEMBER_DECL_3") // allow repeated field and array decl's
+            .rule(";", "MEMBER_DECL_0")
+            .build();
+
+        CFGNode.nt("MEMBER_DECL_3")
+            .rule(TokenType.IDENTIFIER, "MEMBER_DECL_5")
+            .build();
+        
+        CFGNode.nt("MEMBER_DECL_4")
+            .rule(",", "MEMBER_DECL_3")
+            .rule("[", "ARRAY_FIELD_DECL_1")
+            .rule(";", "MEMBER_DECL_0")
             .build();
 
         CFGNode.nt("ARRAY_FIELD_DECL_1")
@@ -74,16 +90,22 @@ public class Parse {
             .build();
         
         CFGNode.nt("ARRAY_FIELD_DECL_2")
-            .rule("]", "ARRAY_FIELD_DECL_2")
-            // TODO: allow repeated FIELD decls on same line
+            .rule("]", "ARRAY_FIELD_DECL_3")
             .build();
         
-        CFGNode.nt("MEMBER_DECL_2")
-            .rule("(", "METHOD_DECL_1")
+        CFGNode.nt("ARRAY_FIELD_DECL_3")
+            .rule(",", "MEMBER_DECL_3")
             .rule(";", "MEMBER_DECL_0")
             .build();
 
         // Method declaration hierarchy
+        CFGNode.nt("METHOD_DECL_0")
+            .rule("int", "METHOD_DECL_1")
+            .rule("long", "METHOD_DECL_1")
+            .rule("bool", "METHOD_DECL_1")
+            .rule("void", "METHOD_DECL_1")
+            .build();
+
         CFGNode.nt("METHOD_DECL_1")
             .rule(LexicalToken.TokenType.IDENTIFIER, "METHOD_DECL_2")
             .build();
@@ -112,15 +134,15 @@ public class Parse {
             .build();
 
         CFGNode.nt("METHOD_DECL_3")
-            .rule(")", "METHOD_DECL_4")
+            .rule(")", "BLOCK_1")
             .build();
 
-        CFGNode.nt("METHOD_DECL_4")
-            .rule("{", "METHOD_BODY")
+        CFGNode.nt("BLOCK_1")
+            .rule("{", "BLOCK_2")
             .build();
 
-        CFGNode.nt("METHOD_BODY")
-            .rule("}", "END_STMT")
+        CFGNode.nt("BLOCK_2")
+            .rule("}", "METHOD_DECL_0")
             .build();
 
         /*
