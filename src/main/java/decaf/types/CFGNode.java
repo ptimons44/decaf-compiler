@@ -14,10 +14,20 @@ public class CFGNode {
     /*
      * Lookahead can be the string value of the token or the token type
      */
-    sealed interface LookaheadKey permits TokenValue, TokenTypeKey {}
+    sealed interface LookaheadKey permits TokenValue, TokenTypeKey, Epsilon {}
     record TokenValue(String value) implements LookaheadKey {}
     record TokenTypeKey(LexicalToken.TokenType type) implements LookaheadKey {}
-    private Map<LookaheadKey, String> transitions;
+    record Epsilon() implements LookaheadKey {}
+    private record TransitionInner(
+        String targetNodeName,
+        boolean consumesToken
+    ) {}
+    public record Transition(
+        CFGNode targetNode,
+        boolean consumesToken
+    ) {}
+
+    private Map<LookaheadKey, TransitionInner> transitions;
 
     private CFGNode(String name) {
         assert !nodeMap.containsKey(name) : "CFGNode with name '" + name + "' already exists";
@@ -26,7 +36,7 @@ public class CFGNode {
         this.isTerminal = true;
     }
 
-    private CFGNode(String name, Map<LookaheadKey, String> transitions) {
+    private CFGNode(String name, Map<LookaheadKey, TransitionInner> transitions) {
         assert !nodeMap.containsKey(name) : "CFGNode with name '" + name + "' already exists";
         this.name = name;
         this.nodeMap.put(name, this); // static map of all nodes
@@ -34,15 +44,16 @@ public class CFGNode {
         this.isTerminal = false;
     }
 
-    public CFGNode matchLL1(LexicalToken ll1) throws ParseException {
-        String next =
+    public Transition matchLL1(LexicalToken ll1) throws ParseException {
+        TransitionInner next =
         transitions.getOrDefault(new TokenValue(ll1.getVal()),
-        transitions.get(new TokenTypeKey(ll1.getTokenType())));
+        transitions.getOrDefault(new TokenTypeKey(ll1.getTokenType()),
+        transitions.get(new Epsilon())));
 
         if (next == null) {
             throw new ParseException("No transition from " + name + " on " + ll1.toString());
         }
-        return nodeMap.get(next);
+        return new Transition(nodeMap.get(next.targetNodeName), next.consumesToken);
      }
     
     public boolean isExpr() {
@@ -60,19 +71,24 @@ public class CFGNode {
 
     public static class CFGNodeBuilder {
         private String name;
-        private Map<LookaheadKey, String> transitions = new HashMap<>();
+        private Map<LookaheadKey, TransitionInner> transitions = new HashMap<>();
 
         private CFGNodeBuilder(String name) {
             this.name = name;
         }
 
         public CFGNodeBuilder rule(String lookahead, String targetNodeName) {
-            transitions.put(new TokenValue(lookahead), targetNodeName);
+            transitions.put(new TokenValue(lookahead), new TransitionInner(targetNodeName, true));
             return this;
         }
 
         public CFGNodeBuilder rule(LexicalToken.TokenType lookahead, String targetNodeName) {
-            transitions.put(new TokenTypeKey(lookahead), targetNodeName);
+            transitions.put(new TokenTypeKey(lookahead), new TransitionInner(targetNodeName, true));
+            return this;
+        }
+
+        public CFGNodeBuilder epsilon(String targetNodeName) {
+            transitions.put(new Epsilon(), new TransitionInner(targetNodeName, false));
             return this;
         }
 
@@ -95,7 +111,7 @@ public class CFGNode {
     }
 
     // Static method to get existing nodes
-    public static CFGNode get(String name) {
+    public static CFGNode getNode(String name) {
         return nodeMap.get(name);
     }
 }

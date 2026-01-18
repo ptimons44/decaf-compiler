@@ -243,13 +243,18 @@ public class Parse {
         LexicalToken ll1;
         while (pos < tokens.size()) {
             ll1 = tokens.get(pos);
-            CFGNode nextNode = curNode.matchLL1(ll1);
+            CFGNode.Transition t = curNode.matchLL1(ll1);
+            CFGNode nextNode = t.targetNode();
             if (nextNode.isExpr()) {
+                // transition to expr always consumes tokens
                 ParseResult exprResult = parseExpr(pos);
                 pos = exprResult.nextPos;
-            } else {
+            } else if (t.consumesToken()) {
                 curNode = nextNode;
                 pos++;
+            } else {
+                // epsilon transition
+                curNode = nextNode;
             }
         }
         return new ParseResult(null, pos);
