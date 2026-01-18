@@ -1,4 +1,4 @@
-package decaf.types;
+package lang.types;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

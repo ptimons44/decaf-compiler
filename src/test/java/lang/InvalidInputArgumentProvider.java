@@ -1,4 +1,4 @@
-package decaf;
+package lang;
 
 import java.util.stream.Stream;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class ValidInputArgumentProvider implements ArgumentsProvider {
+public class InvalidInputArgumentProvider implements ArgumentsProvider {
     
     private static final String INPUT_DIR = "src/test/public-tests/phase1-scanner/public/input";
     private static final String OUTPUT_DIR = "src/test/public-tests/phase1-scanner/public/output";
@@ -29,10 +29,10 @@ public class ValidInputArgumentProvider implements ArgumentsProvider {
         }
         
         // Get all files from input directory mapped by base filename (without extension)
-        // Filter for files NOT containing "invalid"
+        // Filter for files containing "-invalid"
         Map<String, Path> inputFiles = Files.list(inputDir)
                 .filter(Files::isRegularFile)
-                .filter(path -> !path.getFileName().toString().contains("invalid"))
+                .filter(path -> path.getFileName().toString().contains("-invalid"))
                 .collect(Collectors.toMap(
                     path -> getBaseName(path.getFileName().toString()),
                     Function.identity()
@@ -41,7 +41,7 @@ public class ValidInputArgumentProvider implements ArgumentsProvider {
         // Get all files from output directory and pair with input files
         return Files.list(outputDir)
                 .filter(Files::isRegularFile)
-                .filter(path -> !path.getFileName().toString().contains("invalid"))
+                .filter(path -> path.getFileName().toString().contains("-invalid"))
                 .sorted()
                 .map(outputPath -> {
                     String outputFilename = outputPath.getFileName().toString();

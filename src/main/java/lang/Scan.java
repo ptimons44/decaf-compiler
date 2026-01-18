@@ -1,6 +1,4 @@
-package decaf;
-
-import decaf.types.LexicalToken;
+package lang;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,6 +15,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
 
+import lang.types.LexicalToken;
 import lombok.Getter;
 
 public class Scan {

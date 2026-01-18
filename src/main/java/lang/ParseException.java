@@ -1,4 +1,4 @@
-package decaf;
+package lang;
 
 public class ParseException extends Exception {
     public ParseException(String message) {

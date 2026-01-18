@@ -1,9 +1,9 @@
-package decaf.types;
+package lang.types;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import decaf.ParseException;
+import lang.ParseException;
 import lombok.Getter;
 
 public class CFGNode {

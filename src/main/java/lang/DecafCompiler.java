@@ -1,12 +1,12 @@
-package decaf;
-
-import decaf.utils.CommandLineInterface;
-import decaf.utils.CommandLineInterface.CompilerAction;
+package lang;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+
+import lang.utils.CommandLineInterface;
+import lang.utils.CommandLineInterface.CompilerAction;
 
 public class DecafCompiler {
 

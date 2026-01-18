@@ -1,8 +1,9 @@
-package decaf.types;
+package lang.types;
 
-import decaf.types.LexicalToken;
 import java.util.ArrayList;
 import java.util.List;
+
+import lang.types.LexicalToken;
 
 public class ASTExpr extends ASTBase {
     public static enum Fixity {

@@ -1,4 +1,4 @@
-package decaf;
+package lang;
 
 import java.util.stream.Stream;
 

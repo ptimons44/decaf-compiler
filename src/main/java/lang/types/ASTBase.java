@@ -1,4 +1,4 @@
-package decaf.types;
+package lang.types;
 
 import java.util.List;
 import java.util.ArrayList;

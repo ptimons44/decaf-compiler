@@ -1,17 +1,19 @@
-package decaf;
+package lang;
 
-import decaf.types.LexicalToken;
-import decaf.types.LexicalToken.TokenType;
 import lombok.AllArgsConstructor;
-import decaf.types.ASTBase;
-import decaf.types.ASTExpr;
-import decaf.types.CFGNode;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import lang.types.ASTBase;
+import lang.types.ASTExpr;
+import lang.types.CFGNode;
+import lang.types.LexicalToken;
+import lang.types.LexicalToken.TokenType;
+
 import java.util.ArrayList;
 
 public class Parse {

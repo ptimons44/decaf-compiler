@@ -1,4 +1,4 @@
-package decaf.parallel;
+package lang.parallel;
 
 import java.util.Vector;
 

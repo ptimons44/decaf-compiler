@@ -1,15 +1,15 @@
-package decaf.parse;
+package lang.parse;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import decaf.DirectorySource;
-import decaf.Parse;
-import decaf.Scan;
-import decaf.types.LexicalToken;
-import decaf.utils.CommandLineInterface;
+import lang.DirectorySource;
+import lang.Parse;
+import lang.Scan;
+import lang.types.LexicalToken;
+import lang.utils.CommandLineInterface;
 
 import static org.junit.jupiter.api.Assertions.*;
 
