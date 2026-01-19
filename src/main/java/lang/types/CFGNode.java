@@ -18,6 +18,7 @@ public class CFGNode {
     @Getter private String name;
     @Getter private boolean isTerminal;
     @Getter private CFGNodeKind kind;
+    @Getter private CFGNode successor; // Node to return to after completing this fragment/expression
     /*
      * Lookahead can be the string value of the token or the token type
      */
@@ -42,15 +43,17 @@ public class CFGNode {
         this.graph.register(this);
         this.isTerminal = true;
         this.kind = CFGNodeKind.NORMAL;
+        this.successor = null;
     }
 
-    CFGNode(CFGGraph graph, String name, Map<LookaheadKey, TransitionInner> transitions, CFGNodeKind kind) {
+    CFGNode(CFGGraph graph, String name, Map<LookaheadKey, TransitionInner> transitions, CFGNodeKind kind, String successorName) {
         this.graph = graph;
         this.name = name;
         this.graph.register(this);
         this.transitions = transitions;
         this.isTerminal = false;
         this.kind = kind;
+        this.successor = successorName != null ? graph.get(successorName) : null;
     }
 
     public Transition matchLL1(LexicalToken ll1) throws ParseException {
@@ -69,11 +72,16 @@ public class CFGNode {
         return this.name.equals("EXPR");
     }
 
+    public void setSuccessor(CFGNode successor) {
+        this.successor = successor;
+    }
+
     public static class CFGNodeBuilder {
         private CFGGraph graph;
         private String name;
         private Map<LookaheadKey, TransitionInner> transitions = new HashMap<>();
         private CFGNodeKind kind = CFGNodeKind.NORMAL;
+        private String successorName = null;
 
         CFGNodeBuilder(CFGGraph graph, String name) {
             this.graph = graph;
@@ -82,6 +90,11 @@ public class CFGNode {
 
         public CFGNodeBuilder kind(CFGNodeKind kind) {
             this.kind = kind;
+            return this;
+        }
+
+        public CFGNodeBuilder successor(String successorNodeName) {
+            this.successorName = successorNodeName;
             return this;
         }
 
@@ -114,7 +127,7 @@ public class CFGNode {
                 }
             }
 
-            return new CFGNode(graph, name, transitions, kind);
+            return new CFGNode(graph, name, transitions, kind, successorName);
         }
     }
 }

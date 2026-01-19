@@ -96,6 +96,7 @@ public class DecafCFGGraph extends CFGGraph {
             .build();
 
         nt("METHOD_DECL_AFTER_PARAMS")
+            .successor("MEMBER_LIST")
             .rule("{", "BLOCK")
             .build();
 
@@ -113,7 +114,7 @@ public class DecafCFGGraph extends CFGGraph {
 
         // Statement list - can be empty or contain statements
         nt("STATEMENT_LIST")
-            .rule("}", "BLOCK_END")              // End of block
+            .epsilon("BLOCK_END")                // Check for end of block (epsilon - don't consume yet)
             .rule("if", "IF_STATEMENT")
             .rule("while", "WHILE_STATEMENT")
             .rule("for", "FOR_STATEMENT")
@@ -150,6 +151,7 @@ public class DecafCFGGraph extends CFGGraph {
             .build();
 
         nt("VAR_DECL_INIT")
+            .successor("AFTER_VAR_INIT_EXPR")
             .epsilon("EXPR")  // Parse expression for initialization
             .build();
 
@@ -165,10 +167,12 @@ public class DecafCFGGraph extends CFGGraph {
             .build();
 
         nt("IF_CONDITION")
+            .successor("AFTER_IF_CONDITION_EXPR")
             .epsilon("EXPR")  // Parse condition expression
             .build();
 
         nt("AFTER_IF_CONDITION_EXPR")
+            .successor("AFTER_IF_BLOCK")
             .rule(")", "BLOCK")  // Parse if body block
             .build();
 
@@ -179,6 +183,7 @@ public class DecafCFGGraph extends CFGGraph {
             .build();
 
         nt("ELSE_CLAUSE")
+            .successor("AFTER_ELSE_BLOCK")
             .rule("{", "BLOCK")  // else { ... }
             .rule("if", "IF_STATEMENT")  // else if (...)
             .build();
@@ -195,10 +200,12 @@ public class DecafCFGGraph extends CFGGraph {
             .build();
 
         nt("WHILE_CONDITION")
+            .successor("AFTER_WHILE_CONDITION_EXPR")
             .epsilon("EXPR")  // Parse condition expression
             .build();
 
         nt("AFTER_WHILE_CONDITION_EXPR")
+            .successor("AFTER_WHILE_BLOCK")
             .rule(")", "BLOCK")  // Parse while body block
             .build();
 
@@ -223,6 +230,7 @@ public class DecafCFGGraph extends CFGGraph {
             .build();
 
         nt("FOR_INIT_EXPR")
+            .successor("AFTER_FOR_INIT_EXPR")
             .epsilon("EXPR")  // Parse init expression
             .build();
 
@@ -231,6 +239,7 @@ public class DecafCFGGraph extends CFGGraph {
             .build();
 
         nt("FOR_CONDITION")
+            .successor("AFTER_FOR_CONDITION_EXPR")
             .epsilon("EXPR")  // Parse condition expression (can be empty)
             .rule(";", "FOR_UPDATE")  // Empty condition
             .build();
@@ -240,6 +249,7 @@ public class DecafCFGGraph extends CFGGraph {
             .build();
 
         nt("FOR_UPDATE")
+            .successor("AFTER_FOR_BLOCK")
             .rule(TokenType.IDENTIFIER, "FOR_UPDATE_ASSIGN")
             .rule(")", "BLOCK")  // Empty update
             .build();
@@ -249,10 +259,12 @@ public class DecafCFGGraph extends CFGGraph {
             .build();
 
         nt("FOR_UPDATE_EXPR")
+            .successor("AFTER_FOR_UPDATE_EXPR")
             .epsilon("EXPR")  // Parse update expression
             .build();
 
         nt("AFTER_FOR_UPDATE_EXPR")
+            .successor("AFTER_FOR_BLOCK")
             .rule(")", "BLOCK")  // Parse for body block
             .build();
 
@@ -264,6 +276,7 @@ public class DecafCFGGraph extends CFGGraph {
          * Return statement
          */
         nt("RETURN_STATEMENT")
+            .successor("AFTER_RETURN_EXPR")
             .rule(";", "STATEMENT_LIST")  // return;
             .epsilon("EXPR")              // return expr;
             .build();
@@ -287,6 +300,7 @@ public class DecafCFGGraph extends CFGGraph {
          * Nested block statement
          */
         nt("NESTED_BLOCK")
+            .successor("AFTER_NESTED_BLOCK")
             .rule("{", "BLOCK")  // Parse nested block
             .build();
 
@@ -304,6 +318,7 @@ public class DecafCFGGraph extends CFGGraph {
             .build();
 
         nt("ASSIGNMENT_EXPR")
+            .successor("AFTER_ASSIGNMENT_EXPR")
             .epsilon("EXPR")  // Parse right-hand side expression
             .build();
 
@@ -312,6 +327,7 @@ public class DecafCFGGraph extends CFGGraph {
             .build();
 
         nt("ARRAY_ASSIGN")
+            .successor("AFTER_ARRAY_INDEX_EXPR")
             .epsilon("EXPR")  // Parse array index
             .build();
 
@@ -324,6 +340,7 @@ public class DecafCFGGraph extends CFGGraph {
             .build();
 
         nt("ARRAY_ASSIGN_VALUE")
+            .successor("AFTER_ARRAY_ASSIGN_EXPR")
             .epsilon("EXPR")  // Parse value expression
             .build();
 
@@ -337,6 +354,7 @@ public class DecafCFGGraph extends CFGGraph {
             .build();
 
         nt("CALL_ARG_LIST")
+            .successor("AFTER_CALL_ARG_EXPR")
             .epsilon("EXPR")  // Parse first argument
             .build();
 

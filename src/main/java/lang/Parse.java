@@ -113,14 +113,17 @@ public class Parse {
             CFGNode nextNode = t.targetNode();
 
             if (nextNode.getKind() == CFGNode.CFGNodeKind.FRAGMENT_ENTRY) {
-                // Recursively parse block
-                // does not support epsilon transitions to fragment entries
+                // Recursively parse block starting from the entry point
                 ParseResult fragmentResult = parseFromState(nextNode, pos);
                 pos = fragmentResult.nextPos;
+                // After returning from fragment, continue from the successor
+                curNode = curNode.getSuccessor();
             } else if (nextNode.getKind() == CFGNode.CFGNodeKind.EXPR_ENTRY) {
-                // delegate to parse expression
+                // Delegate to parse expression
                 ParseResult exprResult = parseExpr(pos);
                 pos = exprResult.nextPos;
+                // After returning from expression, continue from the successor
+                curNode = curNode.getSuccessor();
             } else if (t.consumesToken()) {
                 curNode = nextNode;
                 pos++;
