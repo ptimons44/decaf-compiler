@@ -11,62 +11,22 @@ import lang.types.LexicalToken.TokenType;
 public class DecafCFGGraph extends CFGGraph {
     /*
      *
-     * Helper methods for common patterns
-     *
-     */
-    CFGNode.CFGNodeBuilder typeDispatchBeforeTypeTransition(String prefix, String cont) {
-        return nt(prefix)
-            .rule("int",  cont + "_TYPE_INT")
-            .rule("long", cont + "_TYPE_LONG")
-            .rule("bool", cont + "_TYPE_BOOL");     
-    }
-    CFGNode.CFGNodeBuilder returnTypeDispatchBeforeTypeTransition(String prefix, String cont) {
-        return typeDispatchBeforeTypeTransition(prefix, cont)
-            .rule("void", cont + "_TYPE_VOID");
-    }
-    CFGNode.CFGNodeBuilder typeDispatchBeforeType(String prefix) {
-        return typeDispatchBeforeTypeTransition(prefix, prefix);
-    }
-    CFGNode.CFGNodeBuilder returnTypeDispatchBeforeType(String prefix) {
-        return returnTypeDispatchBeforeTypeTransition(prefix, prefix);
-    }
-    List<CFGNode.CFGNodeBuilder> typeDispatchAfterType(String prefix, String cont) {
-        return List.of(
-            nt(prefix + "_TYPE_INT").epsilon(cont),
-            nt(prefix + "_TYPE_LONG").epsilon(cont),
-            nt(prefix + "_TYPE_BOOL").epsilon(cont)
-        );
-    }
-    List<CFGNode.CFGNodeBuilder> returnTypeDispatchAfterType(String prefix, String cont) {
-        return List.of(
-            nt(prefix + "_TYPE_INT").epsilon(cont),
-            nt(prefix + "_TYPE_LONG").epsilon(cont),
-            nt(prefix + "_TYPE_BOOL").epsilon(cont),
-            nt(prefix + "_TYPE_VOID").epsilon(cont)
-        );
-    }
-    List<CFGNode.CFGNodeBuilder> returnTypeDispatchAfterType(String prefix) {
-        return returnTypeDispatchAfterType(prefix, prefix);
-    }
-
-    /*
-     *
      * Decl CFGNodes - Organized top-down
      *
      */
     {
         setRoot(
-            returnTypeDispatchBeforeTypeTransition("PROGRAM", "MEMBER_DECL")
-            .rule("import", "IMPORT_DECL_AFTER_IMPORT")
-            .rule("EOF", "EOF")
-            .build()
+            nt("PROGRAM")
+                .epsilon("IMPORT_LIST")
+                .build()
         );
 
         // Import declaration hierarchy
-        returnTypeDispatchBeforeTypeTransition("IMPORT_LIST", "MEMBER_DECL")
+        nt("IMPORT_LIST")
             .rule("import", "IMPORT_DECL_AFTER_IMPORT")
-            .rule("EOF", "EOF")
+            .epsilon("MEMBER_LIST")
             .build();
+
 
         nt("IMPORT_DECL_AFTER_IMPORT")
             .rule(LexicalToken.TokenType.IDENTIFIER, "IMPORT_DECL_AFTER_ID")
@@ -77,30 +37,61 @@ public class DecafCFGGraph extends CFGGraph {
             .build();
         
         // New Member declaration hierarchy
-        returnTypeDispatchAfterType("MEMBER_LIST", "MEMBER_DECL").forEach(builder -> builder.build());
-        returnTypeDispatchBeforeType("MEMBER_DECL").build();
-        returnTypeDispatchAfterType("MEMBER_DECL", "MEMBER_DECL_AFTER_TYPE").forEach(builder -> builder.build());
+        nt("MEMBER_LIST")
+            .rule("void", "METHOD_DECL_AFTER_RETURN_TYPE")
+            .rule("int",  "MEMBER_DECL_AFTER_TYPE")
+            .rule("long", "MEMBER_DECL_AFTER_TYPE")
+            .rule("bool", "MEMBER_DECL_AFTER_TYPE")
+            .rule("EOF",  "EOF")
+            .build();
+        
         nt("MEMBER_DECL_AFTER_TYPE")
             .rule(TokenType.IDENTIFIER, "MEMBER_DECL_AFTER_ID")
             .build();
+
         nt("MEMBER_DECL_AFTER_ID")
-            .rule("(", "METHOD_DECL_REST")
+            .rule("(", "PARAM_LIST")
             .rule("[", "ARRAY_DECL_REST")
-            .rule(",", "FIELD_LIST")
+            .rule(",", "MEMBER_DECL_AFTER_TYPE")
             .rule(";", "MEMBER_LIST")
             .build();
-
-        typeDispatchBeforeType("PARAM_LIST")
-            .rule(")", "AFTER_PARAMS")
+        
+        nt("ARRAY_DECL_REST")
+            .rule(TokenType.INTLITERAL, "ARRAY_DECL_AFTER_SIZE")
             .build();
-        typeDispatchAfterType("PARAM_LIST", "PARAM_LIST_AFTER_TYPE")
-            .forEach(builder -> builder.build());
+        
+        nt("ARRAY_DECL_AFTER_SIZE")
+            .rule("]", "MEMBER_DECL_AFTER_ID")
+            .build();
+
+        nt("METHOD_DECL_AFTER_RETURN_TYPE")
+            .rule(TokenType.IDENTIFIER, "METHOD_DECL_AFTER_ID")
+            .build();
+        
+        nt("METHOD_DECL_AFTER_ID")
+            .rule("(", "PARAM_LIST")
+            .build();
+
+        nt("PARAM_LIST")
+            .rule(")", "AFTER_PARAMS")
+            .rule("int", "PARAM_LIST_AFTER_TYPE")
+            .rule("long", "PARAM_LIST_AFTER_TYPE")
+            .rule("bool", "PARAM_LIST_AFTER_TYPE")
+            .build();
+
         nt("PARAM_LIST_AFTER_TYPE")
             .rule(TokenType.IDENTIFIER, "PARAM_LIST_AFTER_ID")
             .build();
+
         nt("PARAM_LIST_AFTER_ID")
-            .rule(",", "PARAM_LIST")
+            .rule(",", "PARAM_LIST_REQUIRED")
             .rule(")", "AFTER_PARAMS")
+            .build();
+        
+            nt("PARAM_LIST_REQUIRED")                                                                                                                            
+            .rule("int", "PARAM_LIST_AFTER_TYPE")                                                                                                            
+            .rule("long", "PARAM_LIST_AFTER_TYPE")                                                                                                           
+            .rule("bool", "PARAM_LIST_AFTER_TYPE")                                                                                                           
             .build();
 
         t("EOF");
