@@ -57,8 +57,14 @@ public class LexicalToken {
             return TokenType.BOOLEANLITERAL;
         } else if (keywords.contains(val)) {
             return TokenType.KEYWORD;
-        } {
-            return TokenType.IDENTIFIER;
+        } else if (isPunctuation(val)) {
+            return TokenType.PUNCTUATION;
         }
+        return TokenType.IDENTIFIER;
+    }
+
+    private static boolean isPunctuation(String val) {
+        // Check if the value is a punctuation/operator token
+        return val.matches("^[{}()\\[\\];,=+\\-*/%<>!&|]+$");
     }
 }
