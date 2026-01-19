@@ -94,7 +94,7 @@ public class Parse {
     private void expect(boolean condition, String message) throws ParseException {
         if (!condition) {
             this.error = message;
-            throw new IndexOutOfBoundsException(message);
+            throw new ParseException(message);
         }
     }
 
@@ -271,7 +271,11 @@ public class Parse {
         }
 
         // assert post-conditions
-        assert true;
+        expect(
+            root != null,
+            "Parsed expression tree is null at position " + startPos
+        );
+        
         return new ParseResult(root, pos);
     }
 
@@ -301,8 +305,15 @@ public class Parse {
 
             return new ParseResult(innerResult.tree, pos);
         }
-
-        ASTBase root = new ASTBase(this.tokens.get(startPos)); // TODO: initialize with proper prefix unary expr
+        LexicalToken firstToken = this.tokens.get(startPos);
+        expect(
+            firstToken.getTokenType() == LexicalToken.TokenType.IDENTIFIER ||
+            firstToken.getTokenType() == LexicalToken.TokenType.INTLITERAL ||
+            firstToken.getTokenType() == LexicalToken.TokenType.LONGLITERAL ||
+            firstToken.getTokenType() == LexicalToken.TokenType.BOOLEANLITERAL,
+            "Expected identifier or literal at position " + startPos + ", but found: " + firstToken.getVal()
+        );
+        ASTBase root = new ASTBase(firstToken); // TODO: initialize with proper prefix unary expr
         int pos = startPos+1;
         return new ParseResult(root, pos);
     }
