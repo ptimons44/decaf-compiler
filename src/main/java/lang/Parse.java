@@ -118,7 +118,7 @@ public class Parse {
                 ParseResult fragmentResult = parseFromState(nextNode, pos);
                 pos = fragmentResult.nextPos;
             } else if (nextNode.getKind() == CFGNode.CFGNodeKind.EXPR_ENTRY) {
-                // Recursively parse expression
+                // delegate to parse expression
                 ParseResult exprResult = parseExpr(pos);
                 pos = exprResult.nextPos;
             } else if (t.consumesToken()) {
