@@ -7,10 +7,17 @@ import lang.ParseException;
 import lombok.Getter;
 
 public class CFGNode {
+    public enum CFGNodeKind {
+        NORMAL,
+        FRAGMENT_ENTRY,
+        EXPR_ENTRY
+    }
+
     private CFGGraph graph;
 
     @Getter private String name;
     @Getter private boolean isTerminal;
+    @Getter private CFGNodeKind kind;
     /*
      * Lookahead can be the string value of the token or the token type
      */
@@ -34,14 +41,16 @@ public class CFGNode {
         this.name = name;
         this.graph.register(this);
         this.isTerminal = true;
+        this.kind = CFGNodeKind.NORMAL;
     }
 
-    CFGNode(CFGGraph graph, String name, Map<LookaheadKey, TransitionInner> transitions) {
+    CFGNode(CFGGraph graph, String name, Map<LookaheadKey, TransitionInner> transitions, CFGNodeKind kind) {
         this.graph = graph;
         this.name = name;
         this.graph.register(this);
         this.transitions = transitions;
         this.isTerminal = false;
+        this.kind = kind;
     }
 
     public Transition matchLL1(LexicalToken ll1) throws ParseException {
@@ -64,10 +73,16 @@ public class CFGNode {
         private CFGGraph graph;
         private String name;
         private Map<LookaheadKey, TransitionInner> transitions = new HashMap<>();
+        private CFGNodeKind kind = CFGNodeKind.NORMAL;
 
         CFGNodeBuilder(CFGGraph graph, String name) {
             this.graph = graph;
             this.name = name;
+        }
+
+        public CFGNodeBuilder kind(CFGNodeKind kind) {
+            this.kind = kind;
+            return this;
         }
 
         public CFGNodeBuilder rule(String lookahead, String targetNodeName) {
@@ -99,7 +114,7 @@ public class CFGNode {
                 }
             }
 
-            return new CFGNode(graph, name, transitions);
+            return new CFGNode(graph, name, transitions, kind);
         }
     }
 }

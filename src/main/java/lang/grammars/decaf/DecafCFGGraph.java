@@ -6,6 +6,7 @@ import java.util.List;
 
 import lang.types.CFGGraph;
 import lang.types.LexicalToken;
+import lang.types.CFGNode.CFGNodeKind;
 import lang.types.LexicalToken.TokenType;
 
 public class DecafCFGGraph extends CFGGraph {
@@ -73,7 +74,7 @@ public class DecafCFGGraph extends CFGGraph {
             .build();
 
         nt("PARAM_LIST")
-            .rule(")", "AFTER_PARAMS")
+            .rule(")", "METHOD_DECL_AFTER_PARAMS")
             .rule("int", "PARAM_LIST_AFTER_TYPE")
             .rule("long", "PARAM_LIST_AFTER_TYPE")
             .rule("bool", "PARAM_LIST_AFTER_TYPE")
@@ -85,13 +86,18 @@ public class DecafCFGGraph extends CFGGraph {
 
         nt("PARAM_LIST_AFTER_ID")
             .rule(",", "PARAM_LIST_REQUIRED")
-            .rule(")", "AFTER_PARAMS")
+            .rule(")", "BLOCK")
             .build();
         
-            nt("PARAM_LIST_REQUIRED")                                                                                                                            
+        nt("PARAM_LIST_REQUIRED")                                                                                                                            
             .rule("int", "PARAM_LIST_AFTER_TYPE")                                                                                                            
             .rule("long", "PARAM_LIST_AFTER_TYPE")                                                                                                           
             .rule("bool", "PARAM_LIST_AFTER_TYPE")                                                                                                           
+            .build();
+
+        // TODO
+        nt("BLOCK")
+            .kind(CFGNodeKind.FRAGMENT_ENTRY)
             .build();
 
         t("EOF");

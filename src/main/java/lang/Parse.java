@@ -99,20 +99,26 @@ public class Parse {
     }
 
     public ASTBase parseProgram() throws ParseException {
-        ParseResult result = parseDeclOrStmt(this.cfgGraph.getRoot(), 0);
+        ParseResult result = parseFromState(this.cfgGraph.getRoot(), 0);
         expect(result.nextPos == tokens.size(), "Did not reach end of token stream after parsing program");
         return result.tree;
     }
 
-    public ParseResult parseDeclOrStmt(CFGNode left, Integer pos) throws ParseException {
-        CFGNode curNode = left;
+    public ParseResult parseFromState(CFGNode state, int pos) throws ParseException {
+        CFGNode curNode = state;
         LexicalToken ll1;
         while (pos < tokens.size()) {
             ll1 = tokens.get(pos);
             CFGNode.Transition t = curNode.matchLL1(ll1);
             CFGNode nextNode = t.targetNode();
-            if (nextNode.isExpr()) {
-                // transition to expr always consumes tokens
+
+            if (nextNode.getKind() == CFGNode.CFGNodeKind.FRAGMENT_ENTRY) {
+                // Recursively parse block
+                // does not support epsilon transitions to fragment entries
+                ParseResult fragmentResult = parseFromState(nextNode, pos);
+                pos = fragmentResult.nextPos;
+            } else if (nextNode.getKind() == CFGNode.CFGNodeKind.EXPR_ENTRY) {
+                // Recursively parse expression
                 ParseResult exprResult = parseExpr(pos);
                 pos = exprResult.nextPos;
             } else if (t.consumesToken()) {
@@ -124,14 +130,6 @@ public class Parse {
             }
         }
         return new ParseResult(null, pos);
-    }
-
-    public ParseResult parseDecl(Integer pos, ASTBase parent) throws ParseException {
-        return parseDeclOrStmt(null, pos);
-    }
-
-    public ParseResult parseStmt(Integer pos, ASTBase parent) throws ParseException {
-        return parseDeclOrStmt(null, pos);
     }
 
     /*
