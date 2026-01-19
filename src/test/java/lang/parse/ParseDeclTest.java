@@ -7,6 +7,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import lang.Parse;
 import lang.ParseException;
+import lang.grammars.decaf.DecafCFGGraph;
 import lang.types.LexicalToken;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -22,7 +23,7 @@ public class ParseDeclTest extends ParseBaseTest {
         // Test valid variable declaration using token list
         assertNotNull(tokens);
         // Add your parsing logic here
-        Parse parser = new Parse(tokens);
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
         assertDoesNotThrow(() -> parser.parseProgram(), "Parsing valid declaration should not throw an exception");
     }
 
@@ -32,7 +33,7 @@ public class ParseDeclTest extends ParseBaseTest {
         // Test invalid variable declaration using token list
         assertNotNull(tokens);
         // Add your parsing logic that should fail
-        Parse parser = new Parse(tokens);
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
         assertThrows(ParseException.class, () -> parser.parseProgram(), "Parsing invalid declaration should throw an exception");
     }
 

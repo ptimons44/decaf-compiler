@@ -7,7 +7,7 @@ import lang.ParseException;
 import lombok.Getter;
 
 public class CFGNode {
-    static Map<String, CFGNode> nodeMap = new HashMap<>();
+    private CFGGraph graph;
 
     @Getter private String name;
     @Getter private boolean isTerminal;
@@ -29,17 +29,17 @@ public class CFGNode {
 
     private Map<LookaheadKey, TransitionInner> transitions;
 
-    private CFGNode(String name) {
-        assert !nodeMap.containsKey(name) : "CFGNode with name '" + name + "' already exists";
+    CFGNode(CFGGraph graph, String name) {
+        this.graph = graph;
         this.name = name;
-        this.nodeMap.put(name, this); // static map of all nodes
+        this.graph.register(this);
         this.isTerminal = true;
     }
 
-    private CFGNode(String name, Map<LookaheadKey, TransitionInner> transitions) {
-        assert !nodeMap.containsKey(name) : "CFGNode with name '" + name + "' already exists";
+    CFGNode(CFGGraph graph, String name, Map<LookaheadKey, TransitionInner> transitions) {
+        this.graph = graph;
         this.name = name;
-        this.nodeMap.put(name, this); // static map of all nodes
+        this.graph.register(this);
         this.transitions = transitions;
         this.isTerminal = false;
     }
@@ -53,27 +53,20 @@ public class CFGNode {
         if (next == null) {
             throw new ParseException("No transition from " + name + " on " + ll1.toString());
         }
-        return new Transition(nodeMap.get(next.targetNodeName), next.consumesToken);
+        return new Transition(graph.get(next.targetNodeName), next.consumesToken);
      }
     
     public boolean isExpr() {
         return this.name.equals("EXPR");
     }
 
-    // Builder methods
-    public static CFGNode t(String name) {
-        return new CFGNode(name);
-    }
-
-    public static CFGNodeBuilder nt(String name) {
-        return new CFGNodeBuilder(name);
-    }
-
     public static class CFGNodeBuilder {
+        private CFGGraph graph;
         private String name;
         private Map<LookaheadKey, TransitionInner> transitions = new HashMap<>();
 
-        private CFGNodeBuilder(String name) {
+        CFGNodeBuilder(CFGGraph graph, String name) {
+            this.graph = graph;
             this.name = name;
         }
 
@@ -106,12 +99,7 @@ public class CFGNode {
                 }
             }
 
-            return new CFGNode(name, transitions);
+            return new CFGNode(graph, name, transitions);
         }
-    }
-
-    // Static method to get existing nodes
-    public static CFGNode getNode(String name) {
-        return nodeMap.get(name);
     }
 }

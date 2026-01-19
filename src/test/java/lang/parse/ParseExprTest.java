@@ -8,6 +8,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import lang.Parse;
 import lang.ParseException;
 import lang.Parse.ParseResult;
+import lang.grammars.decaf.DecafCFGGraph;
 import lang.types.ASTBase;
 import lang.types.ASTExpr;
 import lang.types.LexicalToken;
@@ -44,7 +45,7 @@ public class ParseExprTest extends ParseBaseTest {
             punct(";")
         );
 
-        Parse parser = new Parse(tokens);
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
         ParseResult result = parseExprSafely(parser, 0);
         
         // Using the builder pattern for cleaner, more readable test construction
@@ -89,7 +90,7 @@ public class ParseExprTest extends ParseBaseTest {
             punct(";")
         );
 
-        Parse parser = new Parse(tokens);
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
         ParseResult result = parseExprSafely(parser, 0);
         
         ASTExpr expectedAST = ASTExpr.subtract()
@@ -133,7 +134,7 @@ public class ParseExprTest extends ParseBaseTest {
             punct(";")
         );
 
-        Parse parser = new Parse(tokens);
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
         ParseResult result = parseExprSafely(parser, 0);
         
         ASTExpr expectedAST = ASTExpr.multiply()
@@ -176,7 +177,7 @@ public class ParseExprTest extends ParseBaseTest {
             punct(";")
         );
 
-        Parse parser = new Parse(tokens);
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
         ParseResult result = parseExprSafely(parser, 0);
 
         // Using the builder pattern for cleaner, more readable test construction
@@ -223,7 +224,7 @@ public class ParseExprTest extends ParseBaseTest {
             punct(";")
         );
 
-        Parse parser = new Parse(tokens);
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
         ParseResult result = parseExprSafely(parser, 0);
 
         // Using the builder pattern for cleaner, more readable test construction
@@ -275,7 +276,7 @@ public class ParseExprTest extends ParseBaseTest {
             punct(";")
         );
 
-        Parse parser = new Parse(tokens);
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
         ParseResult result = parseExprSafely(parser, 0);
 
         // Using the builder pattern for cleaner, more readable test construction
@@ -326,7 +327,7 @@ public class ParseExprTest extends ParseBaseTest {
             punct(";")
         );
 
-        Parse parser = new Parse(tokens);
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
         ParseResult result = parseExprSafely(parser, 0);
         
         ASTBase expectedAST = ASTExpr.leaf("a");
@@ -365,7 +366,7 @@ public class ParseExprTest extends ParseBaseTest {
             punct(";")
         );
 
-        Parse parser = new Parse(tokens);
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
         ParseResult result = parseExprSafely(parser, 0);
         
         ASTExpr expectedAST = ASTExpr.multiply()
@@ -410,7 +411,7 @@ public class ParseExprTest extends ParseBaseTest {
             punct(";")
         );
 
-        Parse parser = new Parse(tokens);
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
         ParseResult result = parseExprSafely(parser, 0);
         
         ASTExpr expectedAST = ASTExpr.add()
@@ -454,7 +455,7 @@ public class ParseExprTest extends ParseBaseTest {
             punct(";")
         );
 
-        Parse parser = new Parse(tokens);
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
         ParseResult result = parseExprSafely(parser, 0);
         
         ASTExpr expectedAST = ASTExpr.divide()
@@ -503,7 +504,7 @@ public class ParseExprTest extends ParseBaseTest {
             punct(";")
         );
 
-        Parse parser = new Parse(tokens);
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
         ParseResult result = parseExprSafely(parser, 0);
         
         ASTExpr expectedAST = ASTExpr.methodCall()
@@ -546,7 +547,7 @@ public class ParseExprTest extends ParseBaseTest {
             punct(";")
         );
 
-        Parse parser = new Parse(tokens);
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
         ParseResult result = parseExprSafely(parser, 0);
         
         ASTExpr expectedAST = ASTExpr.methodCall()
@@ -585,7 +586,7 @@ public class ParseExprTest extends ParseBaseTest {
             punct(";")
         );
 
-        Parse parser = new Parse(tokens);
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
         ParseResult result = parseExprSafely(parser, 0);
         
         ASTExpr expectedAST = ASTExpr.methodCall()
@@ -624,7 +625,7 @@ public class ParseExprTest extends ParseBaseTest {
             punct(";")
         );
 
-        Parse parser = new Parse(tokens);
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
         ParseResult result = parseExprSafely(parser, 0);
         
         ASTExpr expectedAST = ASTExpr.arrayAccess()
@@ -671,7 +672,7 @@ public class ParseExprTest extends ParseBaseTest {
             punct(";")
         );
 
-        Parse parser = new Parse(tokens);
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
         ParseResult result = parseExprSafely(parser, 0);
         
         ASTExpr expectedAST = ASTExpr.arrayAccess()
@@ -727,7 +728,7 @@ public class ParseExprTest extends ParseBaseTest {
             punct(";")
         );
 
-        Parse parser = new Parse(tokens);
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
         ParseResult result = parseExprSafely(parser, 0);
         
         ASTExpr expectedAST = ASTExpr.arrayAccess()
@@ -774,7 +775,7 @@ public class ParseExprTest extends ParseBaseTest {
     @MethodSource("happyPathProvider")
     public void testValidExpression(List<LexicalToken> tokens) {
         assertNotNull(tokens);
-        Parse parser = new Parse(tokens);
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
         
         // For valid expressions, we should not get a ParseException
         assertDoesNotThrow(() -> parser.parseExpr(0), 
@@ -788,7 +789,7 @@ public class ParseExprTest extends ParseBaseTest {
     @MethodSource("sadPathProvider")
     public void testInvalidExpression(List<LexicalToken> tokens) {
         assertNotNull(tokens);
-        Parse parser = new Parse(tokens);
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
         
         // For invalid expressions, we expect either a ParseException or invalid program state
         assertThrows(ParseException.class, () -> parser.parseExpr(0));

@@ -8,6 +8,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import lang.DirectorySource;
 import lang.Parse;
 import lang.Scan;
+import lang.grammars.decaf.DecafCFGGraph;
 import lang.types.LexicalToken;
 import lang.utils.CommandLineInterface;
 
@@ -63,7 +64,7 @@ public class ParseBaseTest {
         scan.scan();
         List<LexicalToken> tokens = scan.getTokens();
         assertNotNull(tokens);
-        Parse parser = new Parse(tokens);
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
         assertDoesNotThrow(() -> parser.parseProgram());
     }
 }

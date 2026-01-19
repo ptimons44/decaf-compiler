@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import lang.grammars.decaf.DecafCFGGraph;
 import lang.utils.CommandLineInterface;
 import lang.utils.CommandLineInterface.CompilerAction;
 
@@ -24,7 +25,7 @@ public class DecafCompiler {
                 return;
             }
 
-            Parse parser = new Parse(scan.getTokens());
+            Parse parser = new Parse(scan.getTokens(), new DecafCFGGraph());
             try {
                 parser.parseProgram();
             } catch (ParseException e) {
