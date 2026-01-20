@@ -139,70 +139,116 @@ public class Parse {
      * Methods for Expression parsing (Pratt)
      */
 
-    private class PrecedenceInfo {
+    private static class PrecedenceInfo {
         public int leftBindingPower;
         public int rightBindingPower;
-        public boolean isPostfix = false;
 
-        public PrecedenceInfo(int leftBindingPower, int rightBindingPower) {
+        private PrecedenceInfo(int leftBindingPower, int rightBindingPower) {
             this.leftBindingPower = leftBindingPower;
             this.rightBindingPower = rightBindingPower;
         }
 
         public PrecedenceInfo(LexicalToken token) {
             assert token != null : "Token cannot be null";
-            assert token.getTokenType() == LexicalToken.TokenType.PUNCTUATION : 
+            assert token.getTokenType() == LexicalToken.TokenType.PUNCTUATION :
                 "Token must be an OPERATOR, got: " + token.getTokenType();
-            
+
             String op = token.getVal();
             assert op != null : "Operator value cannot be null";
-            
-            // Set binding powers based on operator
+
+            // Decide whether the token should be treated as postfix (e.g. '(' or '[' after a primary)
+            // or as a prefix/infix operator based on its symbol.
+            switch (op) {
+                case "(":
+                case "[":
+                    PrecedenceInfo post = forPostfixOperator(token);
+                    this.leftBindingPower = post.leftBindingPower;
+                    this.rightBindingPower = post.rightBindingPower;
+                    break;
+                case "-":
+                case "!":
+                case "++":
+                case "--":
+                    PrecedenceInfo pre = forPrefixOperator(token);
+                    this.leftBindingPower = pre.leftBindingPower;
+                    this.rightBindingPower = pre.rightBindingPower;
+                    break;
+                default:
+                    PrecedenceInfo inf = forInfixOperator(token);
+                    this.leftBindingPower = inf.leftBindingPower;
+                    this.rightBindingPower = inf.rightBindingPower;
+                    break;
+            }
+        }
+
+        public static PrecedenceInfo forInfixOperator(LexicalToken token) {
+            assert token != null : "Token cannot be null";
+            assert token.getTokenType() == LexicalToken.TokenType.PUNCTUATION :
+                "Token must be an OPERATOR, got: " + token.getTokenType();
+
+            String op = token.getVal();
+            assert op != null : "Operator value cannot be null";
+
             switch (op) {
                 case "||":
-                    this.leftBindingPower = 1;
-                    this.rightBindingPower = 2; // LEFT: rbp = lbp + 1
-                    break;
+                    return new PrecedenceInfo(1, 2); // LEFT: rbp = lbp + 1
                 case "&&":
-                    this.leftBindingPower = 2;
-                    this.rightBindingPower = 3; // LEFT: rbp = lbp + 1
-                    break;
+                    return new PrecedenceInfo(2, 3); // LEFT: rbp = lbp + 1
                 case "==":
                 case "!=":
-                    this.leftBindingPower = 3;
-                    this.rightBindingPower = 4; // LEFT: rbp = lbp + 1
-                    break;
+                    return new PrecedenceInfo(3, 4); // LEFT: rbp = lbp + 1
                 case "<":
                 case "<=":
                 case ">":
                 case ">=":
-                    this.leftBindingPower = 4;
-                    this.rightBindingPower = 5; // LEFT: rbp = lbp + 1
-                    break;
+                    return new PrecedenceInfo(4, 5); // LEFT: rbp = lbp + 1
                 case "+":
                 case "-":
-                    this.leftBindingPower = 5;
-                    this.rightBindingPower = 6; // LEFT: rbp = lbp + 1
-                    break;
+                    return new PrecedenceInfo(5, 6); // LEFT: rbp = lbp + 1
                 case "*":
                 case "/":
                 case "%":
-                    this.leftBindingPower = 6;
-                    this.rightBindingPower = 7; // LEFT: rbp = lbp + 1
-                    break;
+                    return new PrecedenceInfo(6, 7); // LEFT: rbp = lbp + 1
+                default:
+                    throw new IllegalArgumentException("Unknown infix operator: " + op);
+            }
+        }
+
+        public static PrecedenceInfo forPrefixOperator(LexicalToken token) {
+            assert token != null : "Token cannot be null";
+            assert token.getTokenType() == LexicalToken.TokenType.PUNCTUATION :
+                "Token must be an OPERATOR, got: " + token.getTokenType();
+
+            String op = token.getVal();
+            assert op != null : "Operator value cannot be null";
+
+            switch (op) {
+                case "-":
                 case "!":
                 case "++":
                 case "--":
-                    this.leftBindingPower = 7;
-                    this.rightBindingPower = 7; // RIGHT: rbp = lbp
-                    this.isPostfix = true;
-                    break;
+                    return new PrecedenceInfo(8, 7); // RIGHT: rbp < lbp
+                default:
+                    throw new IllegalArgumentException("Unknown prefix operator: " + op);
+            }
+        }
+
+        public static PrecedenceInfo forPostfixOperator(LexicalToken token) {
+            assert token != null : "Token cannot be null";
+            assert token.getTokenType() == LexicalToken.TokenType.PUNCTUATION :
+                "Token must be an OPERATOR, got: " + token.getTokenType();
+
+            String op = token.getVal();
+            assert op != null : "Operator value cannot be null";
+
+            switch (op) {
                 case "(":
                 case "[":
-                    this.isPostfix = true;
-                    break;
+                case "++":
+                case "--":
+                    return new PrecedenceInfo(8, 7); // postfix binds tightly
                 default:
-                    throw new IllegalArgumentException("Unknown operator: " + op);
+                    throw new IllegalArgumentException("Unknown postfix operator: " + op);
             }
         }
     }
@@ -247,21 +293,23 @@ public class Parse {
              */
             
             LexicalToken op = this.tokens.get(pos);
-            PrecedenceInfo precInfo = new PrecedenceInfo(op);
-            if (precInfo.leftBindingPower < precedence) {
-                break;
-            }
+            boolean isPostfix = hasPostfixOperator(pos);
 
-            if (precInfo.isPostfix) {
+            if (isPostfix) {
                 ParseResult result = parseExprPostfix(root, pos);
                 root = result.tree;
                 pos = result.nextPos;
                 continue;
             }
 
+            PrecedenceInfo precInfo = PrecedenceInfo.forInfixOperator(op);
+            if (precInfo.leftBindingPower < precedence) {
+                break;
+            }
+
             pos++; // consume operator
             
-            if (!precInfo.isPostfix) {
+            if (!isPostfix) {
                 ParseResult result = parseExpr(pos, precInfo.rightBindingPower);
                 ASTBase right = result.tree;
                 pos = result.nextPos;
@@ -304,7 +352,20 @@ public class Parse {
             pos++; // consume ')'
 
             return new ParseResult(innerResult.tree, pos);
-        }
+        } 
+        // else if (hasPrefixUnaryOperator(startPos)) {
+        //     // parse prefix unary operator
+        //     String op = token.getVal();
+        //     ParseResult operandResult = parseExpr(startPos + 1, new PrecedenceInfo(token).rightBindingPower);
+        //     ASTBase operand = operandResult.tree;
+        //     int pos = operandResult.nextPos;
+
+        //     ASTBase root = ASTExpr.unaryPrefix(op)
+        //         .operand(operand)
+        //         .build();
+
+        //     return new ParseResult(root, pos);
+        // } 
         LexicalToken firstToken = this.tokens.get(startPos);
         expect(
             firstToken.getTokenType() == LexicalToken.TokenType.IDENTIFIER ||
@@ -403,7 +464,61 @@ public class Parse {
                 String op = token.getVal();
                 Set<String> operators = Set.of(
                     "||", "&&", "==", "!=", "<", "<=", ">", ">=",
-                    "+", "-", "*", "/", "%", "!", "++", "--", "(", "["
+                    "+", "-", "*", "/", "%", "(", "["
+                );
+                return operators.contains(op);
+            }
+            return false;
+        }
+        return false;
+    }
+
+    public boolean hasPrefixUnaryOperator(int pos) {
+        /*
+         * Returns true if there is a prefix unary operator token at pos.
+         */
+        if (pos < this.tokens.size()) {
+            LexicalToken token = this.tokens.get(pos);
+            if (token.getTokenType() == LexicalToken.TokenType.PUNCTUATION) {
+                String op = token.getVal();
+                Set<String> operators = Set.of(
+                    "-", "!", "++", "--"
+                );
+                return operators.contains(op);
+            }
+            return false;
+        }
+        return false;
+    }
+
+    public boolean hasPostfixUnaryOperator(int pos) {
+        /*
+         * Returns true if there is a prefix unary operator token at pos.
+         */
+        if (pos < this.tokens.size()) {
+            LexicalToken token = this.tokens.get(pos);
+            if (token.getTokenType() == LexicalToken.TokenType.PUNCTUATION) {
+                String op = token.getVal();
+                Set<String> operators = Set.of(
+                    "++", "--"
+                );
+                return operators.contains(op);
+            }
+            return false;
+        }
+        return false;
+    }
+
+    public boolean hasPostfixOperator(int pos) {
+        /*
+         * Returns true if there is a postfix operator token at pos.
+         */
+        if (pos < this.tokens.size()) {
+            LexicalToken token = this.tokens.get(pos);
+            if (token.getTokenType() == LexicalToken.TokenType.PUNCTUATION) {
+                String op = token.getVal();
+                Set<String> operators = Set.of(
+                    "(", "[", "++", "--"
                 );
                 return operators.contains(op);
             }
