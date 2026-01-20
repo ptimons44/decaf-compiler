@@ -447,7 +447,10 @@ public class Parse {
         
         } else if (POSTFIX_INCREMENT_TOKEN.equals(this.tokens.get(startPos).getVal()) ||
                    POSTFIX_DECREMENT_TOKEN.equals(this.tokens.get(startPos).getVal())) {
-            throw new ParseException("Not Implemented");
+            ASTBase root = ASTExpr.unaryPostfix(op)
+                .operand(left)
+                .build();
+                return new ParseResult(root, startPos + 1);
         }
         else {
             throw new ParseException("Unknown postfix operator: " + this.tokens.get(startPos).getVal());
@@ -464,7 +467,7 @@ public class Parse {
                 String op = token.getVal();
                 Set<String> operators = Set.of(
                     "||", "&&", "==", "!=", "<", "<=", ">", ">=",
-                    "+", "-", "*", "/", "%", "(", "["
+                    "+", "-", "*", "/", "%", "(", "[", "++", "--"
                 );
                 return operators.contains(op);
             }
