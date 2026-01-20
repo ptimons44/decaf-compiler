@@ -18,7 +18,10 @@ public class CFGNode {
     @Getter private String name;
     @Getter private boolean isTerminal;
     @Getter private CFGNodeKind kind;
-    @Getter private CFGNode successor; // Node to return to after completing this fragment/expression
+    private String successorName; // Name of the successor node after completing this fragment/expression
+    public CFGNode getSuccessor() {
+        return this.graph.get(this.successorName);
+    }
     /*
      * Lookahead can be the string value of the token or the token type
      */
@@ -43,7 +46,7 @@ public class CFGNode {
         this.graph.register(this);
         this.isTerminal = true;
         this.kind = CFGNodeKind.NORMAL;
-        this.successor = null;
+        this.successorName = null;
     }
 
     CFGNode(CFGGraph graph, String name, Map<LookaheadKey, TransitionInner> transitions, CFGNodeKind kind, String successorName) {
@@ -53,7 +56,7 @@ public class CFGNode {
         this.transitions = transitions;
         this.isTerminal = false;
         this.kind = kind;
-        this.successor = successorName != null ? graph.get(successorName) : null;
+        this.successorName = successorName;
     }
 
     public Transition matchLL1(LexicalToken ll1) throws ParseException {
@@ -70,10 +73,6 @@ public class CFGNode {
     
     public boolean isExpr() {
         return this.name.equals("EXPR");
-    }
-
-    public void setSuccessor(CFGNode successor) {
-        this.successor = successor;
     }
 
     public static class CFGNodeBuilder {
