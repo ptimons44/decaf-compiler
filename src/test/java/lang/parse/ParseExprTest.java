@@ -1,5 +1,6 @@
 package lang.parse;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -768,7 +769,1077 @@ public class ParseExprTest extends ParseBaseTest {
     }
 
     /*
-     * 2. Validity / acceptance tests (should parse)
+     * 2. Unary operator tests (exact tree assertions)
+     *
+     * Tests for prefix operators (!, -, ++, --) and postfix operators (++, --)
+     * All tests are disabled because these operators are not yet implemented in the parser.
+     */
+
+    // Section 1: Basic Prefix Negation
+
+    @Test
+    @Disabled("Prefix/postfix unary operators not yet implemented")
+    public void testPrefixNegate() {
+        List<LexicalToken> tokens = List.of(
+            op("-"),
+            intLit("5"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
+        ParseResult result = parseExprSafely(parser, 0);
+
+        ASTExpr expectedAST = ASTExpr.unaryPrefix("-")
+            .operand(ASTExpr.leaf("5"))
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Expected nextPos: %d
+                Actual:
+                %s
+                Actual nextPos: %d
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
+                )
+        );
+    }
+
+    @Test
+    @Disabled("Prefix/postfix unary operators not yet implemented")
+    public void testPrefixNegateIdentifier() {
+        List<LexicalToken> tokens = List.of(
+            op("-"),
+            id("x"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
+        ParseResult result = parseExprSafely(parser, 0);
+
+        ASTExpr expectedAST = ASTExpr.unaryPrefix("-")
+            .operand("x")
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Expected nextPos: %d
+                Actual:
+                %s
+                Actual nextPos: %d
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
+                )
+        );
+    }
+
+    @Test
+    @Disabled("Prefix/postfix unary operators not yet implemented")
+    public void testDoublePrefixNegate() {
+        List<LexicalToken> tokens = List.of(
+            op("-"),
+            op("-"),
+            id("x"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
+        ParseResult result = parseExprSafely(parser, 0);
+
+        ASTExpr expectedAST = ASTExpr.unaryPrefix("-")
+            .operand(ASTExpr.unaryPrefix("-")
+                .operand("x")
+                .build())
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Expected nextPos: %d
+                Actual:
+                %s
+                Actual nextPos: %d
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
+                )
+        );
+    }
+
+    @Test
+    @Disabled("Prefix/postfix unary operators not yet implemented")
+    public void testTriplePrefixNegate() {
+        List<LexicalToken> tokens = List.of(
+            op("-"),
+            op("-"),
+            op("-"),
+            intLit("5"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
+        ParseResult result = parseExprSafely(parser, 0);
+
+        ASTExpr expectedAST = ASTExpr.unaryPrefix("-")
+            .operand(ASTExpr.unaryPrefix("-")
+                .operand(ASTExpr.unaryPrefix("-")
+                    .operand(ASTExpr.leaf("5"))
+                    .build())
+                .build())
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Expected nextPos: %d
+                Actual:
+                %s
+                Actual nextPos: %d
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
+                )
+        );
+    }
+
+    // Section 2: Prefix Logical NOT
+
+    @Test
+    @Disabled("Prefix/postfix unary operators not yet implemented")
+    public void testPrefixNot() {
+        List<LexicalToken> tokens = List.of(
+            op("!"),
+            boolLit("true"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
+        ParseResult result = parseExprSafely(parser, 0);
+
+        ASTExpr expectedAST = ASTExpr.unaryPrefix("!")
+            .operand(ASTExpr.leaf("true"))
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Expected nextPos: %d
+                Actual:
+                %s
+                Actual nextPos: %d
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
+                )
+        );
+    }
+
+    @Test
+    @Disabled("Prefix/postfix unary operators not yet implemented")
+    public void testPrefixNotIdentifier() {
+        List<LexicalToken> tokens = List.of(
+            op("!"),
+            id("x"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
+        ParseResult result = parseExprSafely(parser, 0);
+
+        ASTExpr expectedAST = ASTExpr.unaryPrefix("!")
+            .operand("x")
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Expected nextPos: %d
+                Actual:
+                %s
+                Actual nextPos: %d
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
+                )
+        );
+    }
+
+    @Test
+    @Disabled("Prefix/postfix unary operators not yet implemented")
+    public void testDoublePrefixNot() {
+        List<LexicalToken> tokens = List.of(
+            op("!"),
+            op("!"),
+            boolLit("true"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
+        ParseResult result = parseExprSafely(parser, 0);
+
+        ASTExpr expectedAST = ASTExpr.unaryPrefix("!")
+            .operand(ASTExpr.unaryPrefix("!")
+                .operand(ASTExpr.leaf("true"))
+                .build())
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Expected nextPos: %d
+                Actual:
+                %s
+                Actual nextPos: %d
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
+                )
+        );
+    }
+
+    @Test
+    @Disabled("Prefix/postfix unary operators not yet implemented")
+    public void testPrefixNotWithParentheses() {
+        List<LexicalToken> tokens = List.of(
+            op("!"),
+            punct("("),
+            id("x"),
+            punct(")"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
+        ParseResult result = parseExprSafely(parser, 0);
+
+        ASTExpr expectedAST = ASTExpr.unaryPrefix("!")
+            .operand("x")
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Expected nextPos: %d
+                Actual:
+                %s
+                Actual nextPos: %d
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
+                )
+        );
+    }
+
+    // Section 3: Prefix Increment/Decrement
+
+    @Test
+    @Disabled("Prefix/postfix unary operators not yet implemented")
+    public void testPrefixIncrement() {
+        List<LexicalToken> tokens = List.of(
+            op("++"),
+            id("x"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
+        ParseResult result = parseExprSafely(parser, 0);
+
+        ASTExpr expectedAST = ASTExpr.unaryPrefix("++")
+            .operand("x")
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Expected nextPos: %d
+                Actual:
+                %s
+                Actual nextPos: %d
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
+                )
+        );
+    }
+
+    @Test
+    @Disabled("Prefix/postfix unary operators not yet implemented")
+    public void testPrefixDecrement() {
+        List<LexicalToken> tokens = List.of(
+            op("--"),
+            id("x"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
+        ParseResult result = parseExprSafely(parser, 0);
+
+        ASTExpr expectedAST = ASTExpr.unaryPrefix("--")
+            .operand("x")
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Expected nextPos: %d
+                Actual:
+                %s
+                Actual nextPos: %d
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
+                )
+        );
+    }
+
+    // Section 4: Postfix Increment/Decrement
+
+    @Test
+    @Disabled("Prefix/postfix unary operators not yet implemented")
+    public void testPostfixIncrement() {
+        List<LexicalToken> tokens = List.of(
+            id("x"),
+            op("++"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
+        ParseResult result = parseExprSafely(parser, 0);
+
+        ASTExpr expectedAST = ASTExpr.unaryPostfix("++")
+            .operand("x")
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Expected nextPos: %d
+                Actual:
+                %s
+                Actual nextPos: %d
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
+                )
+        );
+    }
+
+    @Test
+    @Disabled("Prefix/postfix unary operators not yet implemented")
+    public void testPostfixDecrement() {
+        List<LexicalToken> tokens = List.of(
+            id("x"),
+            op("--"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
+        ParseResult result = parseExprSafely(parser, 0);
+
+        ASTExpr expectedAST = ASTExpr.unaryPostfix("--")
+            .operand("x")
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Expected nextPos: %d
+                Actual:
+                %s
+                Actual nextPos: %d
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
+                )
+        );
+    }
+
+    @Test
+    @Disabled("Prefix/postfix unary operators not yet implemented")
+    public void testPostfixIncrementAfterLiteral() {
+        List<LexicalToken> tokens = List.of(
+            intLit("5"),
+            op("++"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
+        ParseResult result = parseExprSafely(parser, 0);
+
+        ASTExpr expectedAST = ASTExpr.unaryPostfix("++")
+            .operand(ASTExpr.leaf("5"))
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Expected nextPos: %d
+                Actual:
+                %s
+                Actual nextPos: %d
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
+                )
+        );
+    }
+
+    // Section 5: Mixed Unary Operators
+
+    @Test
+    @Disabled("Prefix/postfix unary operators not yet implemented")
+    public void testPrefixNotNegate() {
+        List<LexicalToken> tokens = List.of(
+            op("!"),
+            op("-"),
+            id("x"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
+        ParseResult result = parseExprSafely(parser, 0);
+
+        ASTExpr expectedAST = ASTExpr.unaryPrefix("!")
+            .operand(ASTExpr.unaryPrefix("-")
+                .operand("x")
+                .build())
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Expected nextPos: %d
+                Actual:
+                %s
+                Actual nextPos: %d
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
+                )
+        );
+    }
+
+    @Test
+    @Disabled("Prefix/postfix unary operators not yet implemented")
+    public void testPrefixNegateNot() {
+        List<LexicalToken> tokens = List.of(
+            op("-"),
+            op("!"),
+            id("x"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
+        ParseResult result = parseExprSafely(parser, 0);
+
+        ASTExpr expectedAST = ASTExpr.unaryPrefix("-")
+            .operand(ASTExpr.unaryPrefix("!")
+                .operand("x")
+                .build())
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Expected nextPos: %d
+                Actual:
+                %s
+                Actual nextPos: %d
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
+                )
+        );
+    }
+
+    // Section 6: Precedence with Binary Operators
+
+    @Test
+    @Disabled("Prefix/postfix unary operators not yet implemented")
+    public void testNegateWithAddition() {
+        List<LexicalToken> tokens = List.of(
+            op("-"),
+            id("a"),
+            op("+"),
+            id("b"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
+        ParseResult result = parseExprSafely(parser, 0);
+
+        ASTExpr expectedAST = ASTExpr.add()
+            .left(ASTExpr.unaryPrefix("-")
+                .operand("a")
+                .build())
+            .right("b")
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Expected nextPos: %d
+                Actual:
+                %s
+                Actual nextPos: %d
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
+                )
+        );
+    }
+
+    @Test
+    @Disabled("Prefix/postfix unary operators not yet implemented")
+    public void testAdditionThenNegate() {
+        List<LexicalToken> tokens = List.of(
+            id("a"),
+            op("+"),
+            op("-"),
+            id("b"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
+        ParseResult result = parseExprSafely(parser, 0);
+
+        ASTExpr expectedAST = ASTExpr.add()
+            .left("a")
+            .right(ASTExpr.unaryPrefix("-")
+                .operand("b")
+                .build())
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Expected nextPos: %d
+                Actual:
+                %s
+                Actual nextPos: %d
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
+                )
+        );
+    }
+
+    @Test
+    @Disabled("Prefix/postfix unary operators not yet implemented")
+    public void testNegateWithMultiplication() {
+        List<LexicalToken> tokens = List.of(
+            op("-"),
+            id("a"),
+            op("*"),
+            id("b"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
+        ParseResult result = parseExprSafely(parser, 0);
+
+        ASTExpr expectedAST = ASTExpr.multiply()
+            .left(ASTExpr.unaryPrefix("-")
+                .operand("a")
+                .build())
+            .right("b")
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Expected nextPos: %d
+                Actual:
+                %s
+                Actual nextPos: %d
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
+                )
+        );
+    }
+
+    @Test
+    @Disabled("Prefix/postfix unary operators not yet implemented")
+    public void testMultiplicationThenNegate() {
+        List<LexicalToken> tokens = List.of(
+            id("a"),
+            op("*"),
+            op("-"),
+            id("b"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
+        ParseResult result = parseExprSafely(parser, 0);
+
+        ASTExpr expectedAST = ASTExpr.multiply()
+            .left("a")
+            .right(ASTExpr.unaryPrefix("-")
+                .operand("b")
+                .build())
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Expected nextPos: %d
+                Actual:
+                %s
+                Actual nextPos: %d
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
+                )
+        );
+    }
+
+    @Test
+    @Disabled("Prefix/postfix unary operators not yet implemented")
+    public void testNotWithAnd() {
+        List<LexicalToken> tokens = List.of(
+            op("!"),
+            id("a"),
+            op("&&"),
+            id("b"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
+        ParseResult result = parseExprSafely(parser, 0);
+
+        ASTExpr expectedAST = ASTExpr.and()
+            .left(ASTExpr.unaryPrefix("!")
+                .operand("a")
+                .build())
+            .right("b")
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Expected nextPos: %d
+                Actual:
+                %s
+                Actual nextPos: %d
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
+                )
+        );
+    }
+
+    @Test
+    @Disabled("Prefix/postfix unary operators not yet implemented")
+    public void testNotWithOr() {
+        List<LexicalToken> tokens = List.of(
+            op("!"),
+            id("a"),
+            op("||"),
+            id("b"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
+        ParseResult result = parseExprSafely(parser, 0);
+
+        ASTExpr expectedAST = ASTExpr.or()
+            .left(ASTExpr.unaryPrefix("!")
+                .operand("a")
+                .build())
+            .right("b")
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Expected nextPos: %d
+                Actual:
+                %s
+                Actual nextPos: %d
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
+                )
+        );
+    }
+
+    @Test
+    @Disabled("Prefix/postfix unary operators not yet implemented")
+    public void testComplexLogical() {
+        List<LexicalToken> tokens = List.of(
+            op("!"),
+            id("a"),
+            op("&&"),
+            op("!"),
+            id("b"),
+            op("||"),
+            id("c"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
+        ParseResult result = parseExprSafely(parser, 0);
+
+        ASTExpr expectedAST = ASTExpr.or()
+            .left(ASTExpr.and()
+                .left(ASTExpr.unaryPrefix("!")
+                    .operand("a")
+                    .build())
+                .right(ASTExpr.unaryPrefix("!")
+                    .operand("b")
+                    .build())
+                .build())
+            .right("c")
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Expected nextPos: %d
+                Actual:
+                %s
+                Actual nextPos: %d
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
+                )
+        );
+    }
+
+    // Section 7: Postfix with Binary Operators
+
+    @Test
+    @Disabled("Prefix/postfix unary operators not yet implemented")
+    public void testPostfixIncrementWithAddition() {
+        List<LexicalToken> tokens = List.of(
+            id("x"),
+            op("++"),
+            op("+"),
+            id("y"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
+        ParseResult result = parseExprSafely(parser, 0);
+
+        ASTExpr expectedAST = ASTExpr.add()
+            .left(ASTExpr.unaryPostfix("++")
+                .operand("x")
+                .build())
+            .right("y")
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Expected nextPos: %d
+                Actual:
+                %s
+                Actual nextPos: %d
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
+                )
+        );
+    }
+
+    @Test
+    @Disabled("Prefix/postfix unary operators not yet implemented")
+    public void testAdditionThenPostfixIncrement() {
+        List<LexicalToken> tokens = List.of(
+            punct("("),
+            id("a"),
+            op("+"),
+            id("b"),
+            punct(")"),
+            op("++"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
+        ParseResult result = parseExprSafely(parser, 0);
+
+        ASTExpr expectedAST = ASTExpr.unaryPostfix("++")
+            .operand(ASTExpr.add()
+                .left("a")
+                .right("b")
+                .build())
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Expected nextPos: %d
+                Actual:
+                %s
+                Actual nextPos: %d
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
+                )
+        );
+    }
+
+    // Section 8: Postfix with Other Postfix Operators
+
+    @Test
+    @Disabled("Prefix/postfix unary operators not yet implemented")
+    public void testArrayAccessPostfixIncrement() {
+        List<LexicalToken> tokens = List.of(
+            id("arr"),
+            punct("["),
+            id("i"),
+            punct("]"),
+            op("++"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
+        ParseResult result = parseExprSafely(parser, 0);
+
+        ASTExpr expectedAST = ASTExpr.unaryPostfix("++")
+            .operand(ASTExpr.arrayAccess()
+                .array("arr")
+                .index("i")
+                .build())
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Expected nextPos: %d
+                Actual:
+                %s
+                Actual nextPos: %d
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
+                )
+        );
+    }
+
+    @Test
+    @Disabled("Prefix/postfix unary operators not yet implemented")
+    public void testMethodCallPostfixIncrement() {
+        List<LexicalToken> tokens = List.of(
+            id("foo"),
+            punct("("),
+            punct(")"),
+            op("++"),
+            punct(";")
+        );
+
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
+        ParseResult result = parseExprSafely(parser, 0);
+
+        ASTExpr expectedAST = ASTExpr.unaryPostfix("++")
+            .operand(ASTExpr.methodCall()
+                .function("foo")
+                .build())
+            .build();
+        ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
+
+        assertEquals(
+            expectedResult,
+            result,
+            () -> """
+                AST mismatch:
+                Expected:
+                %s
+                Expected nextPos: %d
+                Actual:
+                %s
+                Actual nextPos: %d
+                """.formatted(
+                    expectedAST.prettyPrint(),
+                    expectedResult.nextPos,
+                    result.tree.prettyPrint(),
+                    result.nextPos
+                )
+        );
+    }
+
+    /*
+     * 3. Validity / acceptance tests (should parse)
      */
 
     @ParameterizedTest
@@ -989,6 +2060,75 @@ public class ParseExprTest extends ParseBaseTest {
                 punct("("),
                 id("x"),
                 punct(")")
+            ),
+            // Prefix negation with literal: -5
+            List.of(
+                op("-"),
+                intLit("5")
+            ),
+            // Prefix negation with identifier: -x
+            List.of(
+                op("-"),
+                id("x")
+            ),
+            // Prefix NOT with boolean: !true
+            List.of(
+                op("!"),
+                boolLit("true")
+            ),
+            // Prefix NOT with identifier: !x
+            List.of(
+                op("!"),
+                id("x")
+            ),
+            // Prefix increment: ++x
+            List.of(
+                op("++"),
+                id("x")
+            ),
+            // Prefix decrement: --x
+            List.of(
+                op("--"),
+                id("x")
+            ),
+            // Postfix increment: x++
+            List.of(
+                id("x"),
+                op("++")
+            ),
+            // Postfix decrement: x--
+            List.of(
+                id("x"),
+                op("--")
+            ),
+            // Prefix negation with addition: -a + b
+            List.of(
+                op("-"),
+                id("a"),
+                op("+"),
+                id("b")
+            ),
+            // Prefix NOT with AND: !a && b
+            List.of(
+                op("!"),
+                id("a"),
+                op("&&"),
+                id("b")
+            ),
+            // Postfix increment with addition: x++ + y
+            List.of(
+                id("x"),
+                op("++"),
+                op("+"),
+                id("y")
+            ),
+            // Array access with postfix increment: arr[i]++
+            List.of(
+                id("arr"),
+                punct("["),
+                id("i"),
+                punct("]"),
+                op("++")
             )
         );
     }
@@ -1023,6 +2163,34 @@ public class ParseExprTest extends ParseBaseTest {
                 id("arr"),
                 punct("["),
                 id("i")
+            ),
+            // Missing operand after NOT
+            List.of(
+                op("!")
+            ),
+            // Missing operand after prefix increment
+            List.of(
+                op("++")
+            ),
+            // Missing operand after prefix decrement
+            List.of(
+                op("--")
+            ),
+            // Invalid operator sequence: negation followed by binary operator
+            List.of(
+                op("-"),
+                op("+")
+            ),
+            // Ambiguous sequence: x - - (could be x-- or x - -)
+            List.of(
+                id("x"),
+                op("-"),
+                op("-")
+            ),
+            // Invalid operator sequence: double prefix increment
+            List.of(
+                op("++"),
+                op("++")
             )
         );
     }
