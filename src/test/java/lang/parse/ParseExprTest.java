@@ -1,6 +1,5 @@
 package lang.parse;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -778,7 +777,6 @@ public class ParseExprTest extends ParseBaseTest {
     // Section 1: Basic Prefix Negation
 
     @Test
-    @Disabled("Prefix/postfix unary operators not yet implemented")
     public void testPrefixNegate() {
         List<LexicalToken> tokens = List.of(
             op("-"),
@@ -790,7 +788,7 @@ public class ParseExprTest extends ParseBaseTest {
         ParseResult result = parseExprSafely(parser, 0);
 
         ASTExpr expectedAST = ASTExpr.unaryPrefix("-")
-            .operand(ASTExpr.leaf("5"))
+            .operand(intLit("5"))
             .build();
         ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
 
@@ -815,7 +813,6 @@ public class ParseExprTest extends ParseBaseTest {
     }
 
     @Test
-    @Disabled("Prefix/postfix unary operators not yet implemented")
     public void testPrefixNegateIdentifier() {
         List<LexicalToken> tokens = List.of(
             op("-"),
@@ -852,7 +849,6 @@ public class ParseExprTest extends ParseBaseTest {
     }
 
     @Test
-    @Disabled("Prefix/postfix unary operators not yet implemented")
     public void testDoublePrefixNegate() {
         List<LexicalToken> tokens = List.of(
             op("-"),
@@ -892,7 +888,6 @@ public class ParseExprTest extends ParseBaseTest {
     }
 
     @Test
-    @Disabled("Prefix/postfix unary operators not yet implemented")
     public void testTriplePrefixNegate() {
         List<LexicalToken> tokens = List.of(
             op("-"),
@@ -908,7 +903,7 @@ public class ParseExprTest extends ParseBaseTest {
         ASTExpr expectedAST = ASTExpr.unaryPrefix("-")
             .operand(ASTExpr.unaryPrefix("-")
                 .operand(ASTExpr.unaryPrefix("-")
-                    .operand(ASTExpr.leaf("5"))
+                    .operand(intLit("5"))
                     .build())
                 .build())
             .build();
@@ -937,7 +932,6 @@ public class ParseExprTest extends ParseBaseTest {
     // Section 2: Prefix Logical NOT
 
     @Test
-    @Disabled("Prefix/postfix unary operators not yet implemented")
     public void testPrefixNot() {
         List<LexicalToken> tokens = List.of(
             op("!"),
@@ -949,7 +943,7 @@ public class ParseExprTest extends ParseBaseTest {
         ParseResult result = parseExprSafely(parser, 0);
 
         ASTExpr expectedAST = ASTExpr.unaryPrefix("!")
-            .operand(ASTExpr.leaf("true"))
+            .operand(boolLit("true"))
             .build();
         ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
 
@@ -974,7 +968,6 @@ public class ParseExprTest extends ParseBaseTest {
     }
 
     @Test
-    @Disabled("Prefix/postfix unary operators not yet implemented")
     public void testPrefixNotIdentifier() {
         List<LexicalToken> tokens = List.of(
             op("!"),
@@ -1011,7 +1004,6 @@ public class ParseExprTest extends ParseBaseTest {
     }
 
     @Test
-    @Disabled("Prefix/postfix unary operators not yet implemented")
     public void testDoublePrefixNot() {
         List<LexicalToken> tokens = List.of(
             op("!"),
@@ -1025,7 +1017,7 @@ public class ParseExprTest extends ParseBaseTest {
 
         ASTExpr expectedAST = ASTExpr.unaryPrefix("!")
             .operand(ASTExpr.unaryPrefix("!")
-                .operand(ASTExpr.leaf("true"))
+                .operand(boolLit("true"))
                 .build())
             .build();
         ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
@@ -1051,7 +1043,6 @@ public class ParseExprTest extends ParseBaseTest {
     }
 
     @Test
-    @Disabled("Prefix/postfix unary operators not yet implemented")
     public void testPrefixNotWithParentheses() {
         List<LexicalToken> tokens = List.of(
             op("!"),
@@ -1092,7 +1083,6 @@ public class ParseExprTest extends ParseBaseTest {
     // Section 3: Prefix Increment/Decrement
 
     @Test
-    @Disabled("Prefix/postfix unary operators not yet implemented")
     public void testPrefixIncrement() {
         List<LexicalToken> tokens = List.of(
             op("++"),
@@ -1129,7 +1119,6 @@ public class ParseExprTest extends ParseBaseTest {
     }
 
     @Test
-    @Disabled("Prefix/postfix unary operators not yet implemented")
     public void testPrefixDecrement() {
         List<LexicalToken> tokens = List.of(
             op("--"),
@@ -1168,7 +1157,6 @@ public class ParseExprTest extends ParseBaseTest {
     // Section 4: Postfix Increment/Decrement
 
     @Test
-    @Disabled("Prefix/postfix unary operators not yet implemented")
     public void testPostfixIncrement() {
         List<LexicalToken> tokens = List.of(
             id("x"),
@@ -1205,7 +1193,6 @@ public class ParseExprTest extends ParseBaseTest {
     }
 
     @Test
-    @Disabled("Prefix/postfix unary operators not yet implemented")
     public void testPostfixDecrement() {
         List<LexicalToken> tokens = List.of(
             id("x"),
@@ -1242,7 +1229,6 @@ public class ParseExprTest extends ParseBaseTest {
     }
 
     @Test
-    @Disabled("Prefix/postfix unary operators not yet implemented")
     public void testPostfixIncrementAfterLiteral() {
         List<LexicalToken> tokens = List.of(
             intLit("5"),
@@ -1254,7 +1240,7 @@ public class ParseExprTest extends ParseBaseTest {
         ParseResult result = parseExprSafely(parser, 0);
 
         ASTExpr expectedAST = ASTExpr.unaryPostfix("++")
-            .operand(ASTExpr.leaf("5"))
+            .operand(intLit("5"))
             .build();
         ParseResult expectedResult = new ParseResult(expectedAST, tokens.size() - 1);
 
@@ -1281,7 +1267,6 @@ public class ParseExprTest extends ParseBaseTest {
     // Section 5: Mixed Unary Operators
 
     @Test
-    @Disabled("Prefix/postfix unary operators not yet implemented")
     public void testPrefixNotNegate() {
         List<LexicalToken> tokens = List.of(
             op("!"),
@@ -1321,7 +1306,6 @@ public class ParseExprTest extends ParseBaseTest {
     }
 
     @Test
-    @Disabled("Prefix/postfix unary operators not yet implemented")
     public void testPrefixNegateNot() {
         List<LexicalToken> tokens = List.of(
             op("-"),
@@ -1363,7 +1347,6 @@ public class ParseExprTest extends ParseBaseTest {
     // Section 6: Precedence with Binary Operators
 
     @Test
-    @Disabled("Prefix/postfix unary operators not yet implemented")
     public void testNegateWithAddition() {
         List<LexicalToken> tokens = List.of(
             op("-"),
@@ -1405,7 +1388,6 @@ public class ParseExprTest extends ParseBaseTest {
     }
 
     @Test
-    @Disabled("Prefix/postfix unary operators not yet implemented")
     public void testAdditionThenNegate() {
         List<LexicalToken> tokens = List.of(
             id("a"),
@@ -1447,7 +1429,6 @@ public class ParseExprTest extends ParseBaseTest {
     }
 
     @Test
-    @Disabled("Prefix/postfix unary operators not yet implemented")
     public void testNegateWithMultiplication() {
         List<LexicalToken> tokens = List.of(
             op("-"),
@@ -1489,7 +1470,6 @@ public class ParseExprTest extends ParseBaseTest {
     }
 
     @Test
-    @Disabled("Prefix/postfix unary operators not yet implemented")
     public void testMultiplicationThenNegate() {
         List<LexicalToken> tokens = List.of(
             id("a"),
@@ -1531,7 +1511,6 @@ public class ParseExprTest extends ParseBaseTest {
     }
 
     @Test
-    @Disabled("Prefix/postfix unary operators not yet implemented")
     public void testNotWithAnd() {
         List<LexicalToken> tokens = List.of(
             op("!"),
@@ -1573,7 +1552,6 @@ public class ParseExprTest extends ParseBaseTest {
     }
 
     @Test
-    @Disabled("Prefix/postfix unary operators not yet implemented")
     public void testNotWithOr() {
         List<LexicalToken> tokens = List.of(
             op("!"),
@@ -1615,7 +1593,6 @@ public class ParseExprTest extends ParseBaseTest {
     }
 
     @Test
-    @Disabled("Prefix/postfix unary operators not yet implemented")
     public void testComplexLogical() {
         List<LexicalToken> tokens = List.of(
             op("!"),
@@ -1667,7 +1644,6 @@ public class ParseExprTest extends ParseBaseTest {
     // Section 7: Postfix with Binary Operators
 
     @Test
-    @Disabled("Prefix/postfix unary operators not yet implemented")
     public void testPostfixIncrementWithAddition() {
         List<LexicalToken> tokens = List.of(
             id("x"),
@@ -1709,7 +1685,6 @@ public class ParseExprTest extends ParseBaseTest {
     }
 
     @Test
-    @Disabled("Prefix/postfix unary operators not yet implemented")
     public void testAdditionThenPostfixIncrement() {
         List<LexicalToken> tokens = List.of(
             punct("("),
@@ -1755,7 +1730,6 @@ public class ParseExprTest extends ParseBaseTest {
     // Section 8: Postfix with Other Postfix Operators
 
     @Test
-    @Disabled("Prefix/postfix unary operators not yet implemented")
     public void testArrayAccessPostfixIncrement() {
         List<LexicalToken> tokens = List.of(
             id("arr"),
@@ -1798,7 +1772,6 @@ public class ParseExprTest extends ParseBaseTest {
     }
 
     @Test
-    @Disabled("Prefix/postfix unary operators not yet implemented")
     public void testMethodCallPostfixIncrement() {
         List<LexicalToken> tokens = List.of(
             id("foo"),

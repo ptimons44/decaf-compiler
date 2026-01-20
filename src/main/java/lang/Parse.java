@@ -227,7 +227,7 @@ public class Parse {
                 case "!":
                 case "++":
                 case "--":
-                    return new PrecedenceInfo(8, 7); // RIGHT: rbp < lbp
+                    return new PrecedenceInfo(8, 8); // higher than any infix
                 default:
                     throw new IllegalArgumentException("Unknown prefix operator: " + op);
             }
@@ -333,7 +333,19 @@ public class Parse {
         }
         
         LexicalToken token = this.tokens.get(startPos);
-        if (token.getTokenType() == LexicalToken.TokenType.PUNCTUATION && token.getVal().equals("(")) {
+        if (hasPrefixUnaryOperator(startPos)) {
+            // parse prefix unary operator
+            String op = token.getVal();
+            ParseResult operandResult = parseExpr(startPos + 1, PrecedenceInfo.forPrefixOperator(token).rightBindingPower);
+            ASTBase operand = operandResult.tree;
+            int pos = operandResult.nextPos;
+
+            ASTBase root = ASTExpr.unaryPrefix(op)
+                .operand(operand)
+                .build();
+
+            return new ParseResult(root, pos);
+        } else if (token.getTokenType() == LexicalToken.TokenType.PUNCTUATION && token.getVal().equals("(")) {
             // parse parenthesized expression
             ParseResult innerResult = parseExpr(startPos + 1, 0);
             int pos = innerResult.nextPos;
@@ -353,19 +365,7 @@ public class Parse {
 
             return new ParseResult(innerResult.tree, pos);
         } 
-        // else if (hasPrefixUnaryOperator(startPos)) {
-        //     // parse prefix unary operator
-        //     String op = token.getVal();
-        //     ParseResult operandResult = parseExpr(startPos + 1, new PrecedenceInfo(token).rightBindingPower);
-        //     ASTBase operand = operandResult.tree;
-        //     int pos = operandResult.nextPos;
-
-        //     ASTBase root = ASTExpr.unaryPrefix(op)
-        //         .operand(operand)
-        //         .build();
-
-        //     return new ParseResult(root, pos);
-        // } 
+        
         LexicalToken firstToken = this.tokens.get(startPos);
         expect(
             firstToken.getTokenType() == LexicalToken.TokenType.IDENTIFIER ||
