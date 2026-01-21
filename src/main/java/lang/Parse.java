@@ -105,31 +105,39 @@ public class Parse {
     }
 
     public ParseResult parseFromState(CFGNode state, int pos) throws ParseException {
+        /*
+         * Pre-conditions
+         *  - state is not a fragmente-entry node
+         */
         CFGNode curNode = state;
+        CFGNode nextNode = null;
         LexicalToken ll1;
-        while (pos < tokens.size()) {
-            ll1 = tokens.get(pos);
-            CFGNode.Transition t = curNode.matchLL1(ll1);
-            CFGNode nextNode = t.targetNode();
-
-            if (nextNode.getKind() == CFGNode.CFGNodeKind.FRAGMENT_ENTRY) {
-                // Recursively parse block starting from the entry point
-                ParseResult fragmentResult = parseFromState(nextNode, pos);
-                pos = fragmentResult.nextPos;
-                // After returning from fragment, continue from the successor
-                curNode = curNode.getSuccessor();
-            } else if (nextNode.getKind() == CFGNode.CFGNodeKind.EXPR_ENTRY) {
-                // Delegate to parse expression
+        while (!curNode.isTerminal()) {
+            // Parse Expr
+            if (curNode.getKind() == CFGNode.CFGNodeKind.EXPR_ENTRY) {
                 ParseResult exprResult = parseExpr(pos);
                 pos = exprResult.nextPos;
                 // After returning from expression, continue from the successor
                 curNode = curNode.getSuccessor();
-            } else if (t.consumesToken()) {
-                curNode = nextNode;
-                pos++;
+                continue;
+            }
+            
+            // Parse normal LL(1) token advancing 1 or 0
+            ll1 = tokens.get(pos);
+            CFGNode.Transition t = curNode.matchLL1(ll1);
+            nextNode = t.targetNode();
+            pos += (t.consumesToken()) ? 1 : 0;
+
+            // Parse Fragment
+            if (nextNode.getKind() == CFGNode.CFGNodeKind.FRAGMENT_ENTRY) {
+                ParseResult fragmentResult = parseFromState(nextNode, pos);
+                // After returning from fragment, continue from the successor
+                curNode = curNode.getSuccessor();
+                pos = fragmentResult.nextPos;
+                continue;
             } else {
-                // epsilon transition
                 curNode = nextNode;
+                
             }
         }
         return new ParseResult(null, pos);

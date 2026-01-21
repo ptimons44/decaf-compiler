@@ -97,7 +97,7 @@ public class DecafCFGGraph extends CFGGraph {
 
         nt("METHOD_DECL_AFTER_PARAMS")
             .successor("MEMBER_LIST")
-            .rule("{", "BLOCK")
+            .epsilon("BLOCK")
             .build();
 
         /*
@@ -114,7 +114,7 @@ public class DecafCFGGraph extends CFGGraph {
 
         // Statement list - can be empty or contain statements
         nt("STATEMENT_LIST")
-            .epsilon("BLOCK_END")                // Check for end of block (epsilon - don't consume yet)
+            .rule("}", "BLOCK_END")                // Check for end of block (epsilon - don't consume yet)
             .rule("if", "IF_STATEMENT")
             .rule("while", "WHILE_STATEMENT")
             .rule("for", "FOR_STATEMENT")
@@ -128,15 +128,8 @@ public class DecafCFGGraph extends CFGGraph {
             .rule(TokenType.IDENTIFIER, "IDENTIFIER_STATEMENT")
             .build();
 
-        nt("BLOCK_END")
-            .rule("}", "AFTER_BLOCK")
-            .build();
+        t("BLOCK_END");
 
-        // AFTER_BLOCK is where control returns after completing a block
-        // This is a placeholder that your driver will handle based on context
-        nt("AFTER_BLOCK")
-            .epsilon("MEMBER_LIST")  // Default: return to parsing members
-            .build();
 
         /*
          * Variable declarations inside blocks
@@ -372,28 +365,10 @@ public class DecafCFGGraph extends CFGGraph {
          */
         nt("EXPR")
             .kind(CFGNodeKind.EXPR_ENTRY)
-            .epsilon("AFTER_EXPR")  // Placeholder for expression parsing
+            .epsilon("EXPR_END")
             .build();
 
-        // This will be the return point after parsing an expression
-        // Your driver will handle transitioning based on context
-        nt("AFTER_EXPR")
-            .epsilon("EXPRESSION_CONTEXT_RETURN")
-            .build();
-
-        nt("EXPRESSION_CONTEXT_RETURN")
-            .epsilon("AFTER_VAR_INIT_EXPR")
-            .epsilon("AFTER_IF_CONDITION_EXPR")
-            .epsilon("AFTER_WHILE_CONDITION_EXPR")
-            .epsilon("AFTER_FOR_INIT_EXPR")
-            .epsilon("AFTER_FOR_CONDITION_EXPR")
-            .epsilon("AFTER_FOR_UPDATE_EXPR")
-            .epsilon("AFTER_RETURN_EXPR")
-            .epsilon("AFTER_ASSIGNMENT_EXPR")
-            .epsilon("AFTER_ARRAY_INDEX_EXPR")
-            .epsilon("AFTER_ARRAY_ASSIGN_EXPR")
-            .epsilon("AFTER_CALL_ARG_EXPR")
-            .build();
+        t("EXPR_END");
 
         t("EOF");
     }
