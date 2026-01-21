@@ -177,8 +177,8 @@ public class DecafCFGGraph extends CFGGraph {
 
         nt("ELSE_CLAUSE")
             .successor("AFTER_ELSE_BLOCK")
-            .rule("{", "BLOCK")  // else { ... }
             .rule("if", "IF_STATEMENT")  // else if (...)
+            .epsilon("BLOCK")
             .build();
 
         nt("AFTER_ELSE_BLOCK")
