@@ -121,11 +121,11 @@ public class DecafCFGGraph extends CFGGraph {
             .rule("return", "RETURN_STATEMENT")
             .rule("break", "BREAK_STATEMENT")
             .rule("continue", "CONTINUE_STATEMENT")
-            .rule("{", "NESTED_BLOCK")           // Nested block
             .rule("int", "VAR_DECL_AFTER_TYPE")
             .rule("long", "VAR_DECL_AFTER_TYPE")
             .rule("bool", "VAR_DECL_AFTER_TYPE")
             .rule(TokenType.IDENTIFIER, "IDENTIFIER_STATEMENT")
+            .epsilon("BLOCK") // Nested Block
             .build();
 
         t("BLOCK_END");
@@ -287,18 +287,6 @@ public class DecafCFGGraph extends CFGGraph {
 
         nt("CONTINUE_STATEMENT")
             .rule(";", "STATEMENT_LIST")
-            .build();
-
-        /*
-         * Nested block statement
-         */
-        nt("NESTED_BLOCK")
-            .successor("AFTER_NESTED_BLOCK")
-            .rule("{", "BLOCK")  // Parse nested block
-            .build();
-
-        nt("AFTER_NESTED_BLOCK")
-            .epsilon("STATEMENT_LIST")
             .build();
 
         /*
