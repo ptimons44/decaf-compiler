@@ -113,23 +113,19 @@ public class Parse {
         CFGNode nextNode = null;
         LexicalToken ll1;
         while (!curNode.isTerminal()) {
-            // Parse Expr
-            if (curNode.getKind() == CFGNode.CFGNodeKind.EXPR_ENTRY) {
-                ParseResult exprResult = parseExpr(pos);
-                pos = exprResult.nextPos;
-                // After returning from expression, continue from the successor
-                curNode = curNode.getSuccessor();
-                continue;
-            }
-            
             // Parse normal LL(1) token advancing 1 or 0
             ll1 = tokens.get(pos);
             CFGNode.Transition t = curNode.matchLL1(ll1);
             nextNode = t.targetNode();
             pos += (t.consumesToken()) ? 1 : 0;
 
-            // Parse Fragment
-            if (nextNode.getKind() == CFGNode.CFGNodeKind.FRAGMENT_ENTRY) {
+            if (nextNode.getKind() == CFGNode.CFGNodeKind.EXPR_ENTRY) {
+                ParseResult exprResult = parseExpr(pos);
+                pos = exprResult.nextPos;
+                // After returning from expression, continue from the successor
+                curNode = curNode.getSuccessor();
+                continue;
+            } else if (nextNode.getKind() == CFGNode.CFGNodeKind.FRAGMENT_ENTRY) {
                 ParseResult fragmentResult = parseFromState(nextNode, pos);
                 // After returning from fragment, continue from the successor
                 curNode = curNode.getSuccessor();
