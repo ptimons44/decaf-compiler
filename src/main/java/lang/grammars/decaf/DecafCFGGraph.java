@@ -249,6 +249,11 @@ public class DecafCFGGraph extends CFGGraph {
 
         nt("FOR_UPDATE_ASSIGN")
             .rule("=", "FOR_UPDATE_EXPR")
+            .rule("+=", "FOR_UPDATE_EXPR")
+            .rule("-=", "FOR_UPDATE_EXPR")
+            .rule("*=", "FOR_UPDATE_EXPR")
+            .rule("/=", "FOR_UPDATE_EXPR")
+            .rule("%=", "FOR_UPDATE_EXPR")
             .build();
 
         nt("FOR_UPDATE_EXPR")
@@ -294,6 +299,11 @@ public class DecafCFGGraph extends CFGGraph {
          */
         nt("IDENTIFIER_STATEMENT")
             .rule("=", "ASSIGNMENT_EXPR")
+            .rule("+=", "ASSIGNMENT_EXPR")
+            .rule("-=", "ASSIGNMENT_EXPR")
+            .rule("*=", "ASSIGNMENT_EXPR")
+            .rule("/=", "ASSIGNMENT_EXPR")
+            .rule("%=", "ASSIGNMENT_EXPR")
             .rule("[", "ARRAY_ASSIGN")
             .rule("(", "METHOD_CALL")
             .build();
