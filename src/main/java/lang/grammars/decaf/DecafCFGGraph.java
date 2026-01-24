@@ -345,6 +345,7 @@ public class DecafCFGGraph extends CFGGraph {
             .build();
 
         nt("CALL_ARG_LIST")
+            .rule(TokenType.STRINGLITERAL, "AFTER_CALL_ARG_EXPR")
             .successor("AFTER_CALL_ARG_EXPR")
             .epsilon("EXPR")  // Parse first argument
             .build();
