@@ -8,6 +8,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import lang.DirectorySource;
 import lang.Parse;
+import lang.ParseException;
 import lang.Scan;
 import lang.grammars.decaf.DecafCFGGraph;
 import lang.types.LexicalToken;
@@ -19,7 +20,6 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.text.ParseException;
 import java.util.List;
 
 
