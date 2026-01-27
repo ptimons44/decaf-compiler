@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.text.ParseException;
 import java.util.List;
 
 
@@ -59,8 +60,12 @@ public class ParseBaseTest {
         if (only != null && !filename.contains(only)) {
             Assumptions.assumeTrue(false);
         }
-
-        System.out.println("testing file " + filename);
+        Scan scan = new Scan(content);
+        scan.scan();
+        List<LexicalToken> tokens = scan.getTokens();
+        assertNotNull(tokens);
+        Parse parser = new Parse(tokens, new DecafCFGGraph());
+        assertThrows(ParseException.class, () -> parser.parseProgram());
     }
 
     @ParameterizedTest(name = "[{index}] {0}")
