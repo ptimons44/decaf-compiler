@@ -50,14 +50,14 @@ public class FilePathArgumentProvider
                 ? Files.walk(dir).filter(Files::isRegularFile)
                 : Files.list(dir).filter(Files::isRegularFile);
 
-        // Each invocation will receive (Path file, String contents)
+        // Each invocation will receive (String filename, String contents)
         return paths
                 .filter(p -> matcher.matches(p.getFileName()))
                 .sorted()
                 .map(p -> {
                     try {
                         String content = Files.readString(p, charset);
-                        return Arguments.of(content);
+                        return Arguments.of(p.getFileName().toString(), content);
                     } catch (IOException e) {
                         throw new RuntimeException("Failed to read " + p, e);
                     }

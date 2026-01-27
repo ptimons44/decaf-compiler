@@ -1,5 +1,6 @@
 package lang.parse;
 
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -51,16 +52,26 @@ public class ParseBaseTest {
     }
 
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "[{index}] {0}")
     @DirectorySource("src/test/public-tests/phase1-parser/public/illegal") // directory A
-    public void testBadProgramAssertFail(String in) {
-        System.out.println("testing file " + in);
+    public void testBadProgramAssertFail(String filename, String content) {
+        String only = System.getenv("ONLY_TEST");
+        if (only != null && !filename.contains(only)) {
+            Assumptions.assumeTrue(false);
+        }
+
+        System.out.println("testing file " + filename);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "[{index}] {0}")
     @DirectorySource("src/test/public-tests/phase1-parser/public/legal") // directory A
-    public void testGoodProgramCompilesSucessfully(String in) {
-        Scan scan = new Scan(in);
+    public void testGoodProgramCompilesSucessfully(String filename, String content) {
+        String only = System.getenv("ONLY_TEST");
+        if (only != null && !filename.contains(only)) {
+            Assumptions.assumeTrue(false);
+        }
+
+        Scan scan = new Scan(content);
         scan.scan();
         List<LexicalToken> tokens = scan.getTokens();
         assertNotNull(tokens);
