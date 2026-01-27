@@ -117,10 +117,18 @@ public class DecafCFGGraph extends CFGGraph {
         // BLOCK is marked as FRAGMENT_ENTRY for recursive parsing
         nt("BLOCK")
             .kind(CFGNodeKind.FRAGMENT_ENTRY)
-            .rule("{", "STATEMENT_LIST")
+            .rule("{", "FIELD_DECL_LIST")
             .build();
 
-        // Statement list - can be empty or contain statements
+        // Field declaration list - variable declarations must come before statements
+        nt("FIELD_DECL_LIST")
+            .rule("int", "VAR_DECL_AFTER_TYPE")
+            .rule("long", "VAR_DECL_AFTER_TYPE")
+            .rule("bool", "VAR_DECL_AFTER_TYPE")
+            .epsilon("STATEMENT_LIST")  // Transition to statements after all declarations
+            .build();
+
+        // Statement list - can be empty or contain statements (no variable declarations)
         nt("STATEMENT_LIST")
             .rule("}", "BLOCK_END")                // Check for end of block (epsilon - don't consume yet)
             .rule("if", "IF_STATEMENT")
@@ -129,9 +137,6 @@ public class DecafCFGGraph extends CFGGraph {
             .rule("return", "RETURN_STATEMENT")
             .rule("break", "BREAK_STATEMENT")
             .rule("continue", "CONTINUE_STATEMENT")
-            .rule("int", "VAR_DECL_AFTER_TYPE")
-            .rule("long", "VAR_DECL_AFTER_TYPE")
-            .rule("bool", "VAR_DECL_AFTER_TYPE")
             .rule(TokenType.IDENTIFIER, "IDENTIFIER_STATEMENT")
             .epsilon("BLOCK") // Nested Block
             .build();
@@ -147,9 +152,8 @@ public class DecafCFGGraph extends CFGGraph {
             .build();
 
         nt("VAR_DECL_AFTER_ID")
-            .rule(";", "STATEMENT_LIST")          // int x;
+            .rule(";", "FIELD_DECL_LIST")          // int x;
             .rule("," ,"VAR_DECL_AFTER_TYPE")      // int x, y;
-            .rule("=", "VAR_DECL_INIT")           // int x = expr;
             .rule("[", "ARR_DECL")                // int x[10];
             .build();
 
@@ -159,15 +163,6 @@ public class DecafCFGGraph extends CFGGraph {
 
         nt("ARR_DECL_AFTER_SIZE")
             .rule("]", "VAR_DECL_AFTER_ID")
-            .build();
-
-        nt("VAR_DECL_INIT")
-            .successor("AFTER_VAR_INIT_EXPR")
-            .epsilon("EXPR")  // Parse expression for initialization
-            .build();
-
-        nt("AFTER_VAR_INIT_EXPR") 
-            .rule(";", "STATEMENT_LIST")
             .build();
 
         /*
