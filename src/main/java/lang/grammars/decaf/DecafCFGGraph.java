@@ -257,7 +257,6 @@ public class DecafCFGGraph extends CFGGraph {
         nt("FOR_UPDATE")
             .successor("AFTER_FOR_BLOCK")
             .rule(TokenType.IDENTIFIER, "FOR_UPDATE_ASSIGN")
-            .rule(")", "BLOCK")  // Empty update
             .build();
 
         nt("FOR_UPDATE_ASSIGN")
