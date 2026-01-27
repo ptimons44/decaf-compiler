@@ -375,6 +375,8 @@ public class Parse {
             firstToken.getTokenType() == LexicalToken.TokenType.IDENTIFIER ||
             firstToken.getTokenType() == LexicalToken.TokenType.INTLITERAL ||
             firstToken.getTokenType() == LexicalToken.TokenType.LONGLITERAL ||
+            firstToken.getTokenType() == LexicalToken.TokenType.CHARLITERAL ||
+            firstToken.getTokenType() == LexicalToken.TokenType.STRINGLITERAL ||
             firstToken.getTokenType() == LexicalToken.TokenType.BOOLEANLITERAL,
             "Expected identifier or literal at position " + startPos + ", but found: " + firstToken.getVal()
         );
