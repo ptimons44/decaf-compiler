@@ -142,6 +142,15 @@ public class DecafCFGGraph extends CFGGraph {
             .rule(";", "STATEMENT_LIST")          // int x;
             .rule("," ,"VAR_DECL_AFTER_TYPE")      // int x, y;
             .rule("=", "VAR_DECL_INIT")           // int x = expr;
+            .rule("[", "ARR_DECL")                // int x[10];
+            .build();
+
+        nt("ARR_DECL")
+            .rule(TokenType.INTLITERAL, "ARR_DECL_AFTER_SIZE")
+            .build();
+
+        nt("ARR_DECL_AFTER_SIZE")
+            .rule("]", "VAR_DECL_AFTER_ID")
             .build();
 
         nt("VAR_DECL_INIT")
