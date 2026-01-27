@@ -235,7 +235,9 @@ public class Parse {
 
         public static PrecedenceInfo forPrefixOperator(LexicalToken token) {
             assert token != null : "Token cannot be null";
-            assert token.getTokenType() == LexicalToken.TokenType.PUNCTUATION :
+            assert token.getTokenType() == LexicalToken.TokenType.PUNCTUATION ||
+                   (token.getTokenType() == LexicalToken.TokenType.KEYWORD &&
+                    (token.getVal().equals("int") || token.getVal().equals("long"))) :
                 "Token must be an OPERATOR, got: " + token.getTokenType();
 
             String op = token.getVal();
@@ -246,6 +248,8 @@ public class Parse {
                 case "!":
                 case "++":
                 case "--":
+                case "int":
+                case "long":
                     return new PrecedenceInfo(8, 8); // higher than any infix
                 default:
                     throw new IllegalArgumentException("Unknown prefix operator: " + op);
@@ -497,14 +501,11 @@ public class Parse {
          */
         if (pos < this.tokens.size()) {
             LexicalToken token = this.tokens.get(pos);
-            if (token.getTokenType() == LexicalToken.TokenType.PUNCTUATION) {
-                String op = token.getVal();
-                Set<String> operators = Set.of(
-                    "-", "!", "++", "--"
-                );
-                return operators.contains(op);
-            }
-            return false;
+            String op = token.getVal();
+            Set<String> operators = Set.of(
+                "-", "!", "++", "--", "int", "long"
+            );
+            return operators.contains(op);
         }
         return false;
     }
