@@ -138,7 +138,6 @@ public class DecafCFGGraph extends CFGGraph {
             .rule("break", "BREAK_STATEMENT")
             .rule("continue", "CONTINUE_STATEMENT")
             .rule(TokenType.IDENTIFIER, "IDENTIFIER_STATEMENT")
-            .epsilon("BLOCK") // Nested Block
             .build();
 
         t("BLOCK_END");
