@@ -65,6 +65,14 @@ public class DecafCFGGraph extends CFGGraph {
             .rule("]", "MEMBER_DECL_AFTER_ID")
             .build();
 
+        nt("METHOD_LIST")
+            .rule("void", "METHOD_DECL_AFTER_RETURN_TYPE")
+            .rule("int",  "METHOD_DECL_AFTER_RETURN_TYPE")
+            .rule("long", "METHOD_DECL_AFTER_RETURN_TYPE")
+            .rule("bool", "METHOD_DECL_AFTER_RETURN_TYPE")
+            .rule("EOF",  "EOF")
+            .build();
+
         nt("METHOD_DECL_AFTER_RETURN_TYPE")
             .rule(TokenType.IDENTIFIER, "METHOD_DECL_AFTER_ID")
             .build();
@@ -96,7 +104,7 @@ public class DecafCFGGraph extends CFGGraph {
             .build();
 
         nt("METHOD_DECL_AFTER_PARAMS")
-            .successor("MEMBER_LIST")
+            .successor("METHOD_LIST")
             .epsilon("BLOCK")
             .build();
 
