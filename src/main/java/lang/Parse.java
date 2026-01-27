@@ -73,7 +73,8 @@ public class Parse {
             this.pos++;
             return currentToken;
         } else {
-            throw new ParseException("Index out of bounds error: No more tokens");
+            LexicalToken lastToken = this.tokens.isEmpty() ? null : this.tokens.get(this.tokens.size() - 1);
+            throw new ParseException("Index out of bounds error: No more tokens", lastToken);
         }
     }
     private LexicalToken lookahead() throws ParseException {
@@ -83,7 +84,8 @@ public class Parse {
         if (this.pos < this.tokens.size()) {
             return this.tokens.get(this.pos);
         } else {
-            throw new ParseException("Index out of bounds error: No more tokens");
+            LexicalToken lastToken = this.tokens.isEmpty() ? null : this.tokens.get(this.tokens.size() - 1);
+            throw new ParseException("Index out of bounds error: No more tokens", lastToken);
         }
     }
 
@@ -98,9 +100,22 @@ public class Parse {
         }
     }
 
+    /**
+     * Simple assertion helper that includes token information in the error message.
+     */
+    private void expect(boolean condition, String message, LexicalToken token) throws ParseException {
+        if (!condition) {
+            this.error = message;
+            throw new ParseException(message, token);
+        }
+    }
+
     public ASTBase parseProgram() throws ParseException {
         ParseResult result = parseFromState(this.cfgGraph.getRoot(), 0);
-        expect(result.nextPos == tokens.size(), "Did not reach end of token stream after parsing program");
+        if (result.nextPos != tokens.size()) {
+            LexicalToken unexpectedToken = result.nextPos < tokens.size() ? tokens.get(result.nextPos) : null;
+            expect(false, "Did not reach end of token stream after parsing program", unexpectedToken);
+        }
         return result.tree;
     }
 
@@ -323,20 +338,17 @@ public class Parse {
         }
 
         // assert post-conditions
-        expect(
-            root != null,
-            "Parsed expression tree is null at position " + startPos
-        );
+        LexicalToken currentToken = pos > 0 && pos - 1 < this.tokens.size() ? this.tokens.get(pos - 1) : null;
+        expect(root != null, "Parsed expression tree is null", currentToken);
         
         return new ParseResult(root, pos);
     }
 
     public ParseResult parseExprPrefix(int startPos) throws ParseException {
-        if (startPos >= this.tokens.size()) {
-            throw new ParseException("Unexpected end of input while parsing expression at position " + startPos);
-        }
-        
-        LexicalToken token = this.tokens.get(startPos);
+        LexicalToken token = startPos < this.tokens.size() ? this.tokens.get(startPos) :
+                             (this.tokens.isEmpty() ? null : this.tokens.get(this.tokens.size() - 1));
+        expect(startPos < this.tokens.size(), "Unexpected end of input while parsing expression", token);
+
         if (hasPrefixUnaryOperator(startPos)) {
             // parse prefix unary operator
             String op = token.getVal();
@@ -355,21 +367,19 @@ public class Parse {
             int pos = innerResult.nextPos;
 
             // expect closing parenthesis
-            if (pos >= this.tokens.size()) {
-                throw new ParseException("Unexpected end of input, expected closing parenthesis ')' at position " + pos);
-            }
-            
-            LexicalToken closingToken = this.tokens.get(pos);
-            if (!(closingToken.getTokenType() == LexicalToken.TokenType.PUNCTUATION && 
-                  closingToken.getVal().equals(")"))) {
-                throw new ParseException("Expected closing parenthesis ')' at position " + pos + 
-                                       ", but found: " + closingToken.getVal());
-            }
+            LexicalToken closingToken = pos < this.tokens.size() ? this.tokens.get(pos) : token;
+            expect(
+                pos < this.tokens.size() &&
+                closingToken.getTokenType() == LexicalToken.TokenType.PUNCTUATION &&
+                closingToken.getVal().equals(")"),
+                "Expected closing parenthesis ')'",
+                closingToken
+            );
             pos++; // consume ')'
 
             return new ParseResult(innerResult.tree, pos);
-        } 
-        
+        }
+
         LexicalToken firstToken = this.tokens.get(startPos);
         expect(
             firstToken.getTokenType() == LexicalToken.TokenType.IDENTIFIER ||
@@ -378,7 +388,8 @@ public class Parse {
             firstToken.getTokenType() == LexicalToken.TokenType.CHARLITERAL ||
             firstToken.getTokenType() == LexicalToken.TokenType.STRINGLITERAL ||
             firstToken.getTokenType() == LexicalToken.TokenType.BOOLEANLITERAL,
-            "Expected identifier or literal at position " + startPos + ", but found: " + firstToken.getVal()
+            "Expected identifier or literal",
+            firstToken
         );
         ASTBase root = new ASTBase(firstToken); // TODO: initialize with proper prefix unary expr
         int pos = startPos+1;
@@ -386,28 +397,24 @@ public class Parse {
     }
 
     public ParseResult parseExprPostfix(ASTBase left, int startPos) throws ParseException {
-        expect(
-            startPos < this.tokens.size(),
-            "Unexpected end of input while parsing postfix expression at position " + startPos
-        );
-        
-        LexicalToken opToken = this.tokens.get(startPos);
+        LexicalToken opToken = startPos < this.tokens.size() ? this.tokens.get(startPos) : null;
+        expect(startPos < this.tokens.size(), "Unexpected end of input while parsing postfix expression", opToken);
+
         String op = opToken.getVal();
-        
+
         if (START_INDEX_TOKEN.equals(op)) {
             // parse array indexing
-            expect(
-                startPos + 1 < this.tokens.size(),
-                "Unexpected end of input after '[' at position " + (startPos + 1)
-            );
+            expect(startPos + 1 < this.tokens.size(), "Unexpected end of input after '['", opToken);
 
             ParseResult indexResult = parseExpr(startPos + 1, 0);
             int pos = indexResult.nextPos;
 
             // expect closing bracket
+            LexicalToken closingToken = pos < this.tokens.size() ? this.tokens.get(pos) : opToken;
             expect(
-                END_INDEX_TOKEN.equals(this.tokens.get(pos).getVal()),
-                "Expected closing bracket at position " + pos
+                pos < this.tokens.size() && END_INDEX_TOKEN.equals(this.tokens.get(pos).getVal()),
+                "Expected closing bracket ']'",
+                closingToken
             );
 
             pos++; // consume ']'
@@ -418,13 +425,13 @@ public class Parse {
                 .build();
 
             return new ParseResult(tree, pos);
-            
+
         } else if (START_FN_CALL_TOKEN.equals(op)) {
             // parse function call
             int pos = startPos + 1;
             List<ASTBase> args = new ArrayList<>();
 
-            while (pos < this.tokens.size() && 
+            while (pos < this.tokens.size() &&
                    !END_FN_CALL_TOKEN.equals(this.tokens.get(pos).getVal())) {
                 ParseResult argResult = parseExpr(pos, 0);
                 args.add(argResult.tree);
@@ -437,9 +444,11 @@ public class Parse {
                 pos++; // consume ','
             }
 
+            LexicalToken closingToken = pos < this.tokens.size() ? this.tokens.get(pos) : opToken;
             expect(
-                END_FN_CALL_TOKEN.equals(this.tokens.get(pos).getVal()),
-                "Expected closing parenthesis at position " + pos
+                pos < this.tokens.size() && END_FN_CALL_TOKEN.equals(this.tokens.get(pos).getVal()),
+                "Expected closing parenthesis ')'",
+                closingToken
             );
 
             pos++; // consume ')'
@@ -450,7 +459,7 @@ public class Parse {
                 .build();
 
             return new ParseResult(tree, pos);
-        
+
         } else if (POSTFIX_INCREMENT_TOKEN.equals(this.tokens.get(startPos).getVal()) ||
                    POSTFIX_DECREMENT_TOKEN.equals(this.tokens.get(startPos).getVal())) {
             ASTBase root = ASTExpr.unaryPostfix(op)
@@ -459,7 +468,7 @@ public class Parse {
                 return new ParseResult(root, startPos + 1);
         }
         else {
-            throw new ParseException("Unknown postfix operator: " + this.tokens.get(startPos).getVal());
+            throw new ParseException("Unknown postfix operator", opToken);
         }
     }
 
