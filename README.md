@@ -11,8 +11,8 @@ __PSA to 6.1100 students__: If you decide to reference my work, please adhere to
 | Phase | Status |
 | ------- | ------- |
 | Scanner/Lexer   | ✅ |
-| Parser/AST Representation     | 🔧 |
-| Static Semantic Analysis   | 🚫 |
+| Parser/AST Representation     | ✅ |
+| Static Semantic Analysis   | 🔧 |
 | Generate x86-64 assembler code   | 🚫 |
 | Dataflow Optimizations   | 🚫 |
 | Open-ended Optimizations   | 🚫 |
