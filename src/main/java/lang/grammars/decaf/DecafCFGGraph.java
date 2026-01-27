@@ -250,6 +250,8 @@ public class DecafCFGGraph extends CFGGraph {
 
         nt("FOR_UPDATE_ASSIGN")
             .rule("=", "FOR_UPDATE_EXPR")
+            .rule("++", "AFTER_FOR_UPDATE_EXPR")
+            .rule("--", "AFTER_FOR_UPDATE_EXPR")
             .rule("+=", "FOR_UPDATE_EXPR")
             .rule("-=", "FOR_UPDATE_EXPR")
             .rule("*=", "FOR_UPDATE_EXPR")
