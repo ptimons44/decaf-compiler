@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
 import lang.types.LexicalToken;
 import lombok.Getter;
 
-public class Scan {
+public class Scan implements Lexer {
     static class IllegalSyntaxException extends Exception {
         public IllegalSyntaxException(String message) {
             super(message);

@@ -17,7 +17,7 @@ import lang.types.LexicalToken.TokenType;
 
 import java.util.ArrayList;
 
-public class Parse {
+public class Parse implements Parser {
     private static final String START_INDEX_TOKEN = "[";
     private static final String END_INDEX_TOKEN = "]";
     private static final String START_FN_CALL_TOKEN = "(";
